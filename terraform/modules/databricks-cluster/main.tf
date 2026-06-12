@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    databricks = {
+      source  = "databricks/databricks"
+      version = "~> 1.50"
+    }
+  }
+}
+
 resource "databricks_cluster" "all_purpose" {
   cluster_name            = "${var.cluster_name}-ap"
   spark_version           = var.spark_version
@@ -51,7 +60,6 @@ resource "databricks_cluster" "jobs" {
   node_type_id            = var.node_type_id
   driver_node_type_id     = var.driver_node_type_id != null ? var.driver_node_type_id : var.node_type_id
   autotermination_minutes = var.autotermination_minutes
-  spark_conf              = var.spark_conf
 
   autoscale {
     min_workers = var.autoscale_min_workers
@@ -132,13 +140,3 @@ resource "databricks_cluster" "spot" {
 }
 
 data "databricks_current_user" "main" {}
-
-output "all_purpose_cluster_id" {
-  description = "All-purpose cluster ID"
-  value       = databricks_cluster.all_purpose.cluster_id
-}
-
-output "jobs_cluster_id" {
-  description = "Jobs cluster ID"
-  value       = databricks_cluster.jobs.cluster_id
-}

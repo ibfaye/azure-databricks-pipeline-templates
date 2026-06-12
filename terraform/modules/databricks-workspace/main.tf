@@ -1,3 +1,24 @@
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~> 4.0"
+    }
+    databricks = {
+      source  = "databricks/databricks"
+      version = "~> 1.50"
+    }
+    azuread = {
+      source  = "hashicorp/azuread"
+      version = "~> 2.50"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.12"
+    }
+  }
+}
+
 resource "azurerm_databricks_workspace" "main" {
   name                         = var.workspace_name
   resource_group_name          = var.resource_group_name
