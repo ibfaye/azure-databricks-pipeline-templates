@@ -4,11 +4,13 @@ on:
   pull_request:
     paths:
       - 'dbt/**'
+      - '.github/workflows/dbt-ci.yml'
   push:
     branches:
       - main
     paths:
       - 'dbt/**'
+      - '.github/workflows/dbt-ci.yml'
 
 jobs:
   dbt-compile-test:
@@ -26,10 +28,24 @@ jobs:
       - name: Install dbt-databricks
         run: pip install dbt-databricks
 
-      - name: Create profiles.yml in default location
+      - name: Generate profiles.yml
         run: |
           mkdir -p ~/.dbt
-          cp dbt/profiles.yml.example ~/.dbt/profiles.yml
+          cat > ~/.dbt/profiles.yml << 'EOF'
+          databricks_medallion:
+            target: dev
+            outputs:
+              dev:
+                type: databricks
+                catalog: main
+                schema: default
+                host: localhost
+                http_path: /sql/1.0/warehouses/abc123
+                token: dapi-fake-token-for-ci
+                threads: 4
+          EOF
+          echo "=== profiles.yml created ==="
+          cat ~/.dbt/profiles.yml
 
       - name: dbt deps
         working-directory: dbt
