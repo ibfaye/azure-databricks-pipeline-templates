@@ -32,13 +32,13 @@ module "databricks" {
 module "clusters" {
   source = "./modules/databricks-cluster"
 
-  environment            = var.environment
-  cluster_name           = "${var.project_name}-${var.environment}"
-  spark_version          = var.dbr_version
-  node_type_id           = var.cluster_node_type
-  autoscale_min_workers  = var.autoscale_min_workers
-  autoscale_max_workers  = var.autoscale_max_workers
-  custom_tags            = var.tags
+  environment           = var.environment
+  cluster_name          = "${var.project_name}-${var.environment}"
+  spark_version         = var.dbr_version
+  node_type_id          = var.cluster_node_type
+  autoscale_min_workers = var.autoscale_min_workers
+  autoscale_max_workers = var.autoscale_max_workers
+  custom_tags           = var.tags
 
   providers = {
     databricks = databricks.workspace
@@ -52,11 +52,11 @@ resource "databricks_job" "medallion_pipeline" {
   job_cluster {
     job_cluster_key = "default"
     new_cluster {
-      spark_version           = var.dbr_version
-      node_type_id            = var.cluster_node_type
-      data_security_mode      = "SINGLE_USER"
+      spark_version      = var.dbr_version
+      node_type_id       = var.cluster_node_type
+      data_security_mode = "SINGLE_USER"
       spark_conf = {
-        "spark.databricks.delta.preview.enabled"      = "true"
+        "spark.databricks.delta.preview.enabled"       = "true"
         "spark.databricks.delta.optimizeWrite.enabled" = "true"
         "spark.databricks.delta.autoCompact.enabled"   = "true"
       }
@@ -69,14 +69,14 @@ resource "databricks_job" "medallion_pipeline" {
 
   # Task 1: Bronze ingestion
   task {
-    task_key = "bronze_ingestion"
+    task_key        = "bronze_ingestion"
     job_cluster_key = "default"
 
     notebook_task {
       notebook_path = "/Shared/pipelines/medallion/bronze_ingestion"
       base_parameters = {
-        catalog       = "bronze"
-        landing_path  = "abfss://landing@${module.azure.storage_account_name}.dfs.core.windows.net/"
+        catalog         = "bronze"
+        landing_path    = "abfss://landing@${module.azure.storage_account_name}.dfs.core.windows.net/"
         checkpoint_path = "abfss://checkpoint@${module.azure.storage_account_name}.dfs.core.windows.net/bronze/"
       }
     }
@@ -128,12 +128,12 @@ resource "databricks_job" "medallion_pipeline" {
   }
 
   schedule {
-    quartz_cron_expression = "0 0 6 * * ?"  # Daily at 6 AM UTC
+    quartz_cron_expression = "0 0 6 * * ?" # Daily at 6 AM UTC
     timezone_id            = "UTC"
   }
 
   email_notifications {
-    on_failure = ["data-engineering@company.com"]
+    on_failure                = ["data-engineering@company.com"]
     no_alert_for_skipped_runs = false
   }
 
@@ -145,8 +145,8 @@ resource "databricks_job" "medallion_pipeline" {
 
 # ─── SQL Warehouse for BI ───
 resource "databricks_sql_endpoint" "main" {
-  name            = "sql-warehouse-${var.environment}"
-  cluster_size    = var.environment == "prod" ? "2X-Small" : "X-Small"
+  name             = "sql-warehouse-${var.environment}"
+  cluster_size     = var.environment == "prod" ? "2X-Small" : "X-Small"
   min_num_clusters = 1
   max_num_clusters = var.environment == "prod" ? 3 : 1
   auto_stop_mins   = var.environment == "prod" ? 30 : 10

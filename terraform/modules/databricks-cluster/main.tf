@@ -66,9 +66,9 @@ resource "databricks_cluster" "jobs" {
     max_workers = var.autoscale_max_workers
   }
 
-  data_security_mode      = "SINGLE_USER"
-  single_user_name        = data.databricks_current_user.main.user_name
-  spark_conf              = merge(var.spark_conf, {
+  data_security_mode = "SINGLE_USER"
+  single_user_name   = data.databricks_current_user.main.user_name
+  spark_conf = merge(var.spark_conf, {
     "spark.databricks.cluster.profile" = "singleNode"
   })
 
@@ -108,8 +108,8 @@ resource "databricks_cluster" "spot" {
     max_workers = var.autoscale_max_workers
   }
 
-  data_security_mode      = "SINGLE_USER"
-  single_user_name        = data.databricks_current_user.main.user_name
+  data_security_mode = "SINGLE_USER"
+  single_user_name   = data.databricks_current_user.main.user_name
 
   dynamic "library" {
     for_each = var.library_pypi
@@ -133,7 +133,7 @@ resource "databricks_cluster" "spot" {
   dynamic "azure_attributes" {
     for_each = var.spot_bid_max_price != null ? [1] : []
     content {
-      availability     = "SPOT_AZURE"
+      availability       = "SPOT_AZURE"
       spot_bid_max_price = var.spot_bid_max_price
     }
   }

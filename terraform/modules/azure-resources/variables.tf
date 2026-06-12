@@ -24,8 +24,8 @@ variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
   default = {
-    managed_by  = "terraform"
-    project     = "databricks-pipeline"
+    managed_by = "terraform"
+    project    = "databricks-pipeline"
   }
 }
 

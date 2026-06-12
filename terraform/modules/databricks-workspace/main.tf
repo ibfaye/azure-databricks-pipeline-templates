@@ -20,23 +20,23 @@ terraform {
 }
 
 resource "azurerm_databricks_workspace" "main" {
-  name                         = var.workspace_name
-  resource_group_name          = var.resource_group_name
-  location                     = var.location
-  sku                          = var.sku
-  managed_resource_group_name  = var.managed_resource_group_name
-  public_network_access_enabled = !var.no_public_ip
+  name                                  = var.workspace_name
+  resource_group_name                   = var.resource_group_name
+  location                              = var.location
+  sku                                   = var.sku
+  managed_resource_group_name           = var.managed_resource_group_name
+  public_network_access_enabled         = !var.no_public_ip
   network_security_group_rules_required = var.no_public_ip ? "NoAzureDatabricksRules" : "AllRules"
-  tags                         = var.tags
+  tags                                  = var.tags
 
   custom_parameters {
-    no_public_ip                                         = var.no_public_ip
-    virtual_network_id                                   = var.public_subnet_id != null ? regex("^(.*?)/subnets/", var.public_subnet_id)[0] : null
-    public_subnet_name                                   = var.public_subnet_id != null ? split("/", var.public_subnet_id)[length(split("/", var.public_subnet_id)) - 1] : null
-    private_subnet_name                                  = var.private_subnet_id != null ? split("/", var.private_subnet_id)[length(split("/", var.private_subnet_id)) - 1] : null
-    storage_account_name                                 = ""
-    storage_account_sku_name                             = "Standard_GRS"
-    nat_gateway_name                                     = ""
+    no_public_ip             = var.no_public_ip
+    virtual_network_id       = var.public_subnet_id != null ? regex("^(.*?)/subnets/", var.public_subnet_id)[0] : null
+    public_subnet_name       = var.public_subnet_id != null ? split("/", var.public_subnet_id)[length(split("/", var.public_subnet_id)) - 1] : null
+    private_subnet_name      = var.private_subnet_id != null ? split("/", var.private_subnet_id)[length(split("/", var.private_subnet_id)) - 1] : null
+    storage_account_name     = ""
+    storage_account_sku_name = "Standard_GRS"
+    nat_gateway_name         = ""
   }
 }
 
@@ -131,24 +131,24 @@ locals {
 }
 
 resource "databricks_schema" "bronze" {
-  for_each    = toset(local.schemas)
-  provider    = databricks.workspace
+  for_each     = toset(local.schemas)
+  provider     = databricks.workspace
   catalog_name = databricks_catalog.bronze.name
   name         = each.key
   properties   = { environment = var.environment }
 }
 
 resource "databricks_schema" "silver" {
-  for_each    = toset(local.schemas)
-  provider    = databricks.workspace
+  for_each     = toset(local.schemas)
+  provider     = databricks.workspace
   catalog_name = databricks_catalog.silver.name
   name         = each.key
   properties   = { environment = var.environment }
 }
 
 resource "databricks_schema" "gold" {
-  for_each    = toset(local.schemas)
-  provider    = databricks.workspace
+  for_each     = toset(local.schemas)
+  provider     = databricks.workspace
   catalog_name = databricks_catalog.gold.name
   name         = each.key
   properties   = { environment = var.environment }
@@ -161,36 +161,36 @@ resource "databricks_storage_credential" "main" {
   azure_service_principal {
     directory_id   = var.tenant_id
     application_id = azuread_application.databricks_sp.client_id
-    client_secret   = azuread_service_principal_password.databricks_sp.value
+    client_secret  = azuread_service_principal_password.databricks_sp.value
   }
 }
 
 resource "databricks_external_location" "datalake" {
-  provider          = databricks.workspace
-  name              = "datalake-${var.environment}"
-  url               = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
-  credential_name   = databricks_storage_credential.main.name
-  comment           = "External location for ADLS Gen2 data lake"
+  provider        = databricks.workspace
+  name            = "datalake-${var.environment}"
+  url             = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
+  credential_name = databricks_storage_credential.main.name
+  comment         = "External location for ADLS Gen2 data lake"
 }
 
 resource "databricks_external_location" "silver_loc" {
-  provider          = databricks.workspace
-  name              = "silver-${var.environment}"
-  url               = "abfss://silver@${var.storage_account_name}.dfs.core.windows.net/"
-  credential_name   = databricks_storage_credential.main.name
+  provider        = databricks.workspace
+  name            = "silver-${var.environment}"
+  url             = "abfss://silver@${var.storage_account_name}.dfs.core.windows.net/"
+  credential_name = databricks_storage_credential.main.name
 }
 
 resource "databricks_external_location" "gold_loc" {
-  provider          = databricks.workspace
-  name              = "gold-${var.environment}"
-  url               = "abfss://gold@${var.storage_account_name}.dfs.core.windows.net/"
-  credential_name   = databricks_storage_credential.main.name
+  provider        = databricks.workspace
+  name            = "gold-${var.environment}"
+  url             = "abfss://gold@${var.storage_account_name}.dfs.core.windows.net/"
+  credential_name = databricks_storage_credential.main.name
 }
 
 # ─── Grants (admin group) ───
 resource "databricks_grants" "metastore" {
-  provider     = databricks.workspace
-  metastore    = databricks_metastore.main.id
+  provider  = databricks.workspace
+  metastore = databricks_metastore.main.id
   grant {
     principal  = var.admin_group_name
     privileges = ["CREATE_CATALOG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_STORAGE_CREDENTIAL"]
