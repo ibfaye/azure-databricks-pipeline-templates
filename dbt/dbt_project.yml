@@ -73,7 +73,5 @@ tests:
     +store_failures: true
     +schema: test_failures
 
-on-run-start:
-  - "{{ set_uc_catalogs() }}"
 on-run-end:
   - "{{ log_results(results) }}"
