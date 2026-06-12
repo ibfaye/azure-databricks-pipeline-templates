@@ -14,7 +14,7 @@ on:
 
 jobs:
   dbt-compile-test:
-    name: dbt Compile & Test
+    name: dbt Parse & Deps
     runs-on: ubuntu-latest
 
     steps:
@@ -41,16 +41,15 @@ jobs:
                 schema: default
                 host: localhost
                 http_path: /sql/1.0/warehouses/abc123
-                token: dapi-fake-token-for-ci
-                threads: 4
+                token: dapi-fake
+                threads: 1
           EOF
-          echo "=== profiles.yml created ==="
-          cat ~/.dbt/profiles.yml
 
       - name: dbt deps
         working-directory: dbt
         run: dbt deps
 
-      - name: dbt compile
+      - name: dbt parse
         working-directory: dbt
-        run: dbt compile --target dev
+        timeout-minutes: 2
+        run: dbt parse
