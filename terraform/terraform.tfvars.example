@@ -1,0 +1,36 @@
+# ─── Required credentials (set via env vars) ───
+# export TF_VAR_azure_subscription_id="..."
+# export ARM_CLIENT_ID="..."
+# export ARM_CLIENT_SECRET="..."
+# export ARM_TENANT_ID="..."
+# export DATABRICKS_ACCOUNT_ID="..."
+
+# ─── Core Configuration ───
+azure_subscription_id   = "00000000-0000-0000-0000-000000000000"
+azure_tenant_id         = "00000000-0000-0000-0000-000000000000"
+databricks_account_id   = "00000000-0000-0000-0000-000000000000"
+
+project_name = "dbx-pipeline"
+environment  = "dev"
+location     = "westeurope"
+
+# ─── Databricks Workspace ───
+databricks_workspace_sku = "premium"       # premium required for Unity Catalog
+
+# ─── Cluster Configuration ───
+cluster_node_type       = "Standard_DS3_v2"
+dbr_version             = "14.3.x-scala2.12"
+autoscale_min_workers   = 2
+autoscale_max_workers   = 10
+
+# ─── Unity Catalog Access ───
+admin_group_name   = "admins"
+reader_group_name  = "analysts"
+
+# ─── Tags ───
+tags = {
+  cost_center = "data-engineering"
+  data_classification = "internal"
+  owner       = "data-platform-team"
+  project     = "azure-databricks-pipeline"
+}

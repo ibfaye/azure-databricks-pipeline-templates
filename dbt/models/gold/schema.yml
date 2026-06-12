@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: daily_sales_summary
+    description: "Gold: Daily sales KPIs — revenue, orders, AOV by store/currency"
+    columns:
+      - name: sales_date
+        tests:
+          - not_null
+      - name: total_revenue_usd
+        description: "Total USD revenue for the day"
+      - name: order_count
+      - name: avg_order_value
+      - name: unique_customers
+
+  - name: customer_360
+    description: "Gold: Single customer view — LTV, segments, churn risk"
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: lifetime_value
+      - name: customer_segment
+      - name: churn_risk_score
+
+  - name: inventory_health
+    description: "Gold: Inventory KPIs — turnover, stockout risk, ABC classification"
+    columns:
+      - name: product_sku
+        tests:
+          - not_null
+      - name: days_on_hand
+      - name: abc_class
+      - name: stockout_risk
+
+  - name: web_conversion_funnel
+    description: "Gold: E-commerce conversion funnel — visit → cart → purchase"
+    columns:
+      - name: funnel_date
+      - name: sessions
+      - name: added_to_cart
+      - name: purchases
+      - name: conversion_rate
+
+  - name: iot_anomaly_dashboard
+    description: "Gold: IoT device health & anomaly summary for operations"
+    columns:
+      - name: device_id
+      - name: anomaly_rate_last_7d
+      - name: avg_battery_level
+      - name: days_since_last_reading

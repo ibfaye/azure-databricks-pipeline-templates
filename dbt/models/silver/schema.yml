@@ -1,0 +1,62 @@
+version: 2
+
+models:
+  - name: sales_transactions_cleaned
+    description: "Silver: cleansed sales transactions — deduplicated, validated amounts, currency normalised"
+    columns:
+      - name: transaction_id
+        tests:
+          - not_null
+          - unique
+      - name: amount_usd
+        description: "Amount converted to USD for consolidation"
+      - name: amount_local
+        description: "Original transaction amount in local currency"
+      - name: customer_email_hashed
+        description: "PII: email hashed for privacy"
+      - name: surrogate_key
+        tests:
+          - not_null
+          - unique
+
+  - name: customers_cleaned
+    description: "Silver: cleansed customer profiles — standardised names, validated emails, masked PII"
+    columns:
+      - name: customer_id
+        tests:
+          - not_null
+          - unique
+      - name: email_hashed
+      - name: full_name_clean
+      - name: country_code
+
+  - name: inventory_snapshots
+    description: "Silver: daily inventory position snapshots with FIFO costing"
+    columns:
+      - name: snapshot_date
+        tests:
+          - not_null
+      - name: product_sku
+        tests:
+          - not_null
+      - name: quantity_on_hand
+      - name: total_cost
+
+  - name: web_sessions_enriched
+    description: "Silver: enriched web sessions with UTM attribution and bot filtering"
+    columns:
+      - name: session_id
+        tests:
+          - not_null
+      - name: is_bot
+      - name: session_duration_seconds
+
+  - name: iot_readings_validated
+    description: "Silver: validated IoT sensor readings — outlier flagged, interpolated gaps"
+    columns:
+      - name: device_id
+        tests:
+          - not_null
+      - name: sensor_type
+      - name: reading_value_validated
+      - name: is_outlier

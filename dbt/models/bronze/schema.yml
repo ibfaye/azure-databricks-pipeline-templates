@@ -1,0 +1,90 @@
+version: 2
+
+sources:
+  - name: landing
+    description: "External data sources landing in the data lake"
+    database: "{{ var('bronze_catalog', 'bronze') }}"
+    schema: raw
+    tables:
+      - name: raw_sales_transactions
+        description: "Raw sales transactions from POS/ERP systems"
+        columns:
+          - name: transaction_id
+            description: "Unique transaction identifier"
+            tests:
+              - not_null
+          - name: amount
+            description: "Transaction amount"
+          - name: currency
+            description: "ISO 4217 currency code"
+          - name: customer_email
+            description: "Customer contact"
+          - name: transaction_date
+            description: "Transaction timestamp"
+
+      - name: raw_customer_profiles
+        description: "Customer master data from CRM"
+        columns:
+          - name: customer_id
+            tests:
+              - not_null
+              - unique
+          - name: email
+          - name: full_name
+          - name: registration_date
+
+      - name: raw_inventory_movements
+        description: "Warehouse inventory transactions"
+        columns:
+          - name: movement_id
+            tests:
+              - not_null
+              - unique
+          - name: product_sku
+          - name: quantity
+          - name: movement_type
+
+      - name: raw_web_events
+        description: "Clickstream and web analytics events"
+        columns:
+          - name: event_id
+            tests:
+              - not_null
+          - name: session_id
+          - name: user_id
+          - name: event_type
+          - name: page_url
+          - name: event_timestamp
+
+      - name: raw_iot_sensor_readings
+        description: "IoT device telemetry data"
+        columns:
+          - name: device_id
+            tests:
+              - not_null
+          - name: sensor_type
+          - name: reading_value
+          - name: reading_timestamp
+
+models:
+  - name: stg_sales_transactions
+    description: "Staging: raw sales transactions with audit columns"
+    columns:
+      - name: transaction_id
+        tests:
+          - not_null
+          - unique
+      - name: amount
+        tests:
+          - not_null
+      - name: transaction_date
+        tests:
+          - not_null
+  - name: stg_customer_profiles
+    description: "Staging: raw customer profiles"
+  - name: stg_inventory_movements
+    description: "Staging: raw inventory movements"
+  - name: stg_web_events
+    description: "Staging: raw web event data"
+  - name: stg_iot_readings
+    description: "Staging: raw IoT sensor readings"

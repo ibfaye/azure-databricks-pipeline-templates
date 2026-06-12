@@ -1,0 +1,126 @@
+# =============================================================================
+# Medallion Pipeline — Full ETL Orchestration
+# =============================================================================
+# This YAML defines the Databricks Workflow (job) for the medallion pipeline.
+# It can be deployed via Terraform (see terraform/main.tf) or the Databricks CLI.
+#
+# Usage:
+#   databricks jobs create --json @medallion_pipeline.yml
+# =============================================================================
+
+name: "medallion_pipeline"
+description: "End-to-end medallion architecture: Bronze → Silver → Gold with dbt transforms"
+
+schedule:
+  quartz_cron_expression: "0 0 6 * * ?"  # Daily at 6:00 AM UTC
+  timezone_id: "UTC"
+  pause_status: "UNPAUSED"
+
+email_notifications:
+  on_failure:
+    - "data-engineering@company.com"
+  no_alert_for_skipped_runs: false
+
+timeout_seconds: 7200  # 2 hours max
+
+max_concurrent_runs: 1
+
+# ── Job Cluster (cost-optimized) ────────────────────────────────────────────
+job_clusters:
+  - job_cluster_key: "etl_cluster"
+    new_cluster:
+      spark_version: "14.3.x-scala2.12"
+      node_type_id: "Standard_DS3_v2"
+      data_security_mode: "SINGLE_USER"
+      spark_conf:
+        spark.databricks.delta.preview.enabled: "true"
+        spark.databricks.delta.optimizeWrite.enabled: "true"
+        spark.databricks.delta.autoCompact.enabled: "true"
+        spark.sql.adaptive.enabled: "true"
+        spark.sql.adaptive.coalescePartitions.enabled: "true"
+      spark_env_vars:
+        ENVIRONMENT: "{{environment}}"
+        DBT_PROFILES_DIR: "/Workspace/Shared/dbt/"
+      autoscale:
+        min_workers: 2
+        max_workers: 10
+      custom_tags:
+        pipeline: "medallion"
+        cost_center: "data-engineering"
+
+# ── Pipeline Tasks ──────────────────────────────────────────────────────────
+tasks:
+  # Task 1: Bronze Ingestion
+  - task_key: "bronze_ingestion"
+    description: "Ingest raw data from ADLS landing zone to Unity Catalog Bronze"
+    job_cluster_key: "etl_cluster"
+    notebook_task:
+      notebook_path: "/Shared/pipelines/medallion/bronze_ingestion"
+      base_parameters:
+        environment: "{{environment}}"
+        storage_account: "{{storage_account}}"
+    timeout_seconds: 3600
+    max_retries: 1
+    min_retry_interval_millis: 300000  # 5 minutes
+
+  # Task 2: Silver Transformation
+  - task_key: "silver_transformation"
+    description: "Cleanse, validate, and PII-mask data — run dbt silver models"
+    depends_on:
+      - task_key: "bronze_ingestion"
+    job_cluster_key: "etl_cluster"
+    notebook_task:
+      notebook_path: "/Shared/pipelines/medallion/silver_transformation"
+      base_parameters:
+        environment: "{{environment}}"
+        dbt_command: "run --select silver.* --target {{environment}}"
+    timeout_seconds: 3600
+    max_retries: 1
+    min_retry_interval_millis: 300000
+
+  # Task 3: Gold Aggregation
+  - task_key: "gold_aggregation"
+    description: "Compute business KPIs and aggregations — run dbt gold models"
+    depends_on:
+      - task_key: "silver_transformation"
+    job_cluster_key: "etl_cluster"
+    notebook_task:
+      notebook_path: "/Shared/pipelines/medallion/gold_aggregation"
+      base_parameters:
+        environment: "{{environment}}"
+        dbt_command: "run --select gold.* --target {{environment}}"
+    timeout_seconds: 3600
+    max_retries: 1
+    min_retry_interval_millis: 300000
+
+  # Task 4: Data Quality
+  - task_key: "data_quality"
+    description: "Post-pipeline data quality checks — row counts, freshness, nulls, anomalies"
+    depends_on:
+      - task_key: "gold_aggregation"
+    job_cluster_key: "etl_cluster"
+    notebook_task:
+      notebook_path: "/Shared/pipelines/medallion/data_quality"
+      base_parameters:
+        environment: "{{environment}}"
+    timeout_seconds: 1800
+    max_retries: 0
+
+  # Task 5: dbt Tests (parallel to DQ)
+  - task_key: "dbt_tests"
+    description: "Run dbt data tests and schema tests"
+    depends_on:
+      - task_key: "gold_aggregation"
+    job_cluster_key: "etl_cluster"
+    notebook_task:
+      notebook_path: "/Shared/pipelines/medallion/dbt_tests"
+      base_parameters:
+        dbt_command: "test --target {{environment}}"
+    timeout_seconds: 1800
+    max_retries: 0
+
+parameters:
+  - name: "environment"
+    default: "dev"
+  - name: "storage_account"
+    default: "stdatabricksdl"

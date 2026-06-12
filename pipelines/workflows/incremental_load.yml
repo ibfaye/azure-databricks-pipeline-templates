@@ -1,0 +1,64 @@
+# =============================================================================
+# Incremental Load Pipeline
+# =============================================================================
+# Lightweight pipeline for hourly/delta loads.
+# Only processes new data since the last run using Auto Loader.
+#
+# Usage:
+#   databricks jobs create --json @incremental_load.yml
+# =============================================================================
+
+name: "incremental_load"
+description: "Hourly incremental data load for near-real-time analytics"
+
+schedule:
+  quartz_cron_expression: "0 0 * * * ?"  # Every hour
+  timezone_id: "UTC"
+  pause_status: "PAUSED"  # Paused by default — unpause when needed
+
+email_notifications:
+  on_failure:
+    - "data-engineering@company.com"
+  no_alert_for_skipped_runs: true
+
+timeout_seconds: 1800
+max_concurrent_runs: 1
+
+job_clusters:
+  - job_cluster_key: "incremental_cluster"
+    new_cluster:
+      spark_version: "14.3.x-scala2.12"
+      node_type_id: "Standard_DS3_v2"
+      data_security_mode: "SINGLE_USER"
+      spark_conf:
+        spark.databricks.delta.optimizeWrite.enabled: "true"
+        spark.databricks.delta.autoCompact.enabled: "true"
+      autoscale:
+        min_workers: 1
+        max_workers: 4
+      custom_tags:
+        pipeline: "incremental"
+        cost_center: "data-engineering"
+
+tasks:
+  - task_key: "incremental_ingest"
+    description: "Auto Loader incremental read from landing zone"
+    job_cluster_key: "incremental_cluster"
+    notebook_task:
+      notebook_path: "/Shared/pipelines/incremental/incremental_ingest"
+      base_parameters:
+        environment: "{{environment}}"
+        source: "{{source}}"
+        table: "{{table}}"
+        trigger: "availableNow"
+    timeout_seconds: 1200
+    max_retries: 2
+    min_retry_interval_millis: 60000
+
+parameters:
+  - name: "environment"
+    default: "dev"
+  - name: "source"
+    default: "web_events"
+  - name: "table"
+    default: "raw_web_events"

@@ -1,0 +1,79 @@
+name: 'databricks_medallion'
+version: '1.0.0'
+config-version: 2
+
+profile: 'databricks_medallion'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+vars:
+  # Unity Catalog references
+  bronze_catalog: "bronze"
+  silver_catalog: "silver"
+  gold_catalog:   "gold"
+
+  # Default schema for each layer
+  bronze_schema: "raw"
+  silver_schema: "cleansed"
+  gold_schema:   "analytics"
+
+  # Data quality thresholds
+  freshness_warning_hours: 24
+  freshness_error_hours: 48
+  null_threshold_pct: 5.0
+
+models:
+  databricks_medallion:
+    bronze:
+      +materialized: view
+      +schema: bronze_raw
+      +tags: ["bronze", "raw"]
+      +persist_docs:
+        relation: true
+        columns: true
+    silver:
+      +materialized: incremental
+      +schema: silver_cleansed
+      +tags: ["silver", "validated"]
+      +persist_docs:
+        relation: true
+        columns: true
+      +on_schema_change: "sync_all_columns"
+    gold:
+      +materialized: table
+      +schema: gold_analytics
+      +tags: ["gold", "business"]
+      +persist_docs:
+        relation: true
+        columns: true
+
+snapshots:
+  databricks_medallion:
+    +target_schema: snapshots
+    +strategy: timestamp
+    +unique_key: surrogate_key
+    +updated_at: loaded_at
+
+seeds:
+  databricks_medallion:
+    +schema: seeds
+    +quote_columns: false
+
+tests:
+  databricks_medallion:
+    +store_failures: true
+    +schema: test_failures
+
+on-run-start:
+  - "{{ set_uc_catalogs() }}"
+on-run-end:
+  - "{{ log_results(results) }}"
