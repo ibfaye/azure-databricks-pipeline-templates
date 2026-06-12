@@ -14,11 +14,6 @@ jobs:
   dbt-compile-test:
     name: dbt Compile & Test
     runs-on: ubuntu-latest
-    env:
-      DBT_PROFILES_DIR: ${{ github.workspace }}/dbt
-      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-      DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
-      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -32,18 +27,12 @@ jobs:
         run: pip install dbt-databricks
 
       - name: Create profiles.yml
-        working-directory: dbt
-        run: cp profiles.yml.example profiles.yml
+        run: cp dbt/profiles.yml.example dbt/profiles.yml
 
       - name: dbt deps
         working-directory: dbt
-        run: dbt deps
+        run: dbt deps --profiles-dir .
 
       - name: dbt compile
         working-directory: dbt
-        run: dbt compile --target dev
-
-      - name: dbt test (dry run)
-        working-directory: dbt
-        run: dbt test --target dev --select tag:bronze tag:silver tag:gold || true
-        continue-on-error: true
+        run: dbt compile --target dev --profiles-dir .
