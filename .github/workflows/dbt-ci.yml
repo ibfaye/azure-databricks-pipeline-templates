@@ -31,6 +31,10 @@ jobs:
       - name: Install dbt-databricks
         run: pip install dbt-databricks
 
+      - name: Create profiles.yml
+        working-directory: dbt
+        run: cp profiles.yml.example profiles.yml
+
       - name: dbt deps
         working-directory: dbt
         run: dbt deps
