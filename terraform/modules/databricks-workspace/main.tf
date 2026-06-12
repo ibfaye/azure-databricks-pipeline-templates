@@ -29,7 +29,7 @@ provider "databricks" {
 resource "databricks_metastore" "main" {
   provider      = databricks.workspace
   name          = "metastore-${var.environment}"
-  storage_root  = "abfss://${var.environment}-metastore@${local.storage_account_name}.dfs.core.windows.net/"
+  storage_root  = "abfss://${var.environment}-metastore@${var.storage_account_name}.dfs.core.windows.net/"
   owner         = var.databricks_account_id
   region        = var.location
   force_destroy = true
