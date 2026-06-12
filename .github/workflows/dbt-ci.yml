@@ -26,21 +26,15 @@ jobs:
       - name: Install dbt-databricks
         run: pip install dbt-databricks
 
-      - name: Create profiles.yml
-        run: cp dbt/profiles.yml.example dbt/profiles.yml
-
-      - name: Debug — show profiles.yml
+      - name: Create profiles.yml in default location
         run: |
-          echo "=== File exists? ==="
-          ls -la dbt/profiles.yml
-          echo ""
-          echo "=== Content ==="
-          cat dbt/profiles.yml
+          mkdir -p ~/.dbt
+          cp dbt/profiles.yml.example ~/.dbt/profiles.yml
 
       - name: dbt deps
         working-directory: dbt
-        run: dbt deps --profiles-dir "$PWD"
+        run: dbt deps
 
       - name: dbt compile
         working-directory: dbt
-        run: dbt compile --target dev --profiles-dir "$PWD"
+        run: dbt compile --target dev
