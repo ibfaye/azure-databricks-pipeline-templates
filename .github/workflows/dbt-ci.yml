@@ -29,10 +29,18 @@ jobs:
       - name: Create profiles.yml
         run: cp dbt/profiles.yml.example dbt/profiles.yml
 
+      - name: Debug — show profiles.yml
+        run: |
+          echo "=== File exists? ==="
+          ls -la dbt/profiles.yml
+          echo ""
+          echo "=== Content ==="
+          cat dbt/profiles.yml
+
       - name: dbt deps
         working-directory: dbt
-        run: dbt deps --profiles-dir .
+        run: dbt deps --profiles-dir "$PWD"
 
       - name: dbt compile
         working-directory: dbt
-        run: dbt compile --target dev --profiles-dir .
+        run: dbt compile --target dev --profiles-dir "$PWD"
