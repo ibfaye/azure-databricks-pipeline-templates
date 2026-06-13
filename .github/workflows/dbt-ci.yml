@@ -14,7 +14,7 @@ on:
 
 jobs:
   dbt-validate:
-    name: dbt Validate
+    name: dbt Compile & Test
     runs-on: ubuntu-latest
 
     steps:
@@ -31,28 +31,25 @@ jobs:
       - name: Generate profiles.yml
         run: |
           mkdir -p ~/.dbt
-          cat > ~/.dbt/profiles.yml << 'EOF'
+          cat > ~/.dbt/profiles.yml << EOF
           databricks_medallion:
-            target: dev
+            target: ci
             outputs:
-              dev:
+              ci:
                 type: databricks
                 catalog: main
-                schema: default
-                host: localhost
-                http_path: /sql/1.0/warehouses/abc123
-                token: dapi-fake
-                threads: 1
-                connect_retries: 1
-                connect_timeout: 5
+                schema: dbt_ci_${GITHUB_RUN_ID}
+                host: ${{ secrets.DATABRICKS_HOST }}
+                http_path: ${{ secrets.DATABRICKS_HTTP_PATH }}
+                token: ${{ secrets.DATABRICKS_TOKEN }}
+                threads: 4
           EOF
 
       - name: dbt deps
         working-directory: dbt
         run: dbt deps
 
-      - name: dbt ls
+      - name: dbt compile
         working-directory: dbt
-        timeout-minutes: 1
-        run: dbt ls 2>&1 | head -30
-        continue-on-error: true
+        timeout-minutes: 5
+        run: dbt compile --target ci
