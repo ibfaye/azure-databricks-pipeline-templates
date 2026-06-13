@@ -77,6 +77,8 @@ With HNS enabled, you get:
 
 **Without HNS**, listing files under `bronze/sales/` would require scanning every blob whose prefix matches — an O(n) operation that becomes untenable at scale.
 
+> **Historical note — `wasbs://` vs `abfss://`:** The `wasbs://` (Windows Azure Storage Blob) protocol was the legacy Azure Blob Storage driver for Spark. It used the flat-namespace `blob.core.windows.net` endpoint and lacked directory-level ACLs, atomic renames, and efficient path listing. Databricks has fully deprecated `wasbs://` in favor of `abfss://` (Azure Blob File System) with ADLS Gen2. The repo uses `abfss://` exclusively — `wasbs://` is mentioned only for historical awareness when migrating legacy pipelines.
+
 ### 2.2 The Medallion Architecture: Boundaries, Not Suggestions
 
 The repo enforces the Medallion pattern through **physical containers** (not just logical folders). This is a deliberate design decision with operational consequences:
@@ -576,6 +578,6 @@ You have completed Module 2 when:
 3. You have traced a single record from Landing → Bronze → Silver → Gold and verified the PII masking
 4. `OPTIMIZE ... ZORDER BY` reduced file count by at least 50% on a table with multiple writes
 5. You created a new domain schema (`finance`) following the repo's three-catalog pattern
-6. You can explain the difference between `abfss://` and `wasbs://` and when to use `dfs.core.windows.net` vs `blob.core.windows.net`
+| 6 | You can explain the difference between `abfss://` and the legacy `wasbs://` protocol, and when to use `dfs.core.windows.net` vs `blob.core.windows.net` |
 
 **Estimated time:** 4–6 hours, including sample data generation and repeated pipeline runs.

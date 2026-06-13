@@ -494,6 +494,12 @@ gh secret set DATABRICKS_TOKEN --body "dapi..."
 ### 3.7 Set Up Azure Monitor Alerts
 
 ```bash
+# Create an action group first (required for alert notifications)
+az monitor action-group create \
+  --name "data-engineering-alerts" \
+  --resource-group "rg-dbx-pipeline-dev" \
+  --action email data-engineering@company.com
+
 # Create an alert on Databricks job failures
 az monitor metrics alert create \
   --name "medallion-pipeline-failure" \
@@ -502,7 +508,7 @@ az monitor metrics alert create \
   --condition "avg Failed Runs > 0" \
   --window-size 15m \
   --evaluation-frequency 5m \
-  --action email data-engineering@company.com
+  --action "/subscriptions/$SUB_ID/resourceGroups/rg-dbx-pipeline-dev/providers/microsoft.insights/actionGroups/data-engineering-alerts"
 ```
 
 ### 3.8 Implement the Full Deployment Lifecycle

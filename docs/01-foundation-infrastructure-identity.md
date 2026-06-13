@@ -11,7 +11,7 @@ By the end of this module, the learner will:
 | # | Conceptual | Practical |
 |---|-----------|-----------|
 | 1 | Understand the Azure resource hierarchy (Management Groups → Subscriptions → Resource Groups → Resources) and why the repo co-locates all pipeline assets in one resource group | Create and lock down a resource group using both the Azure Portal and `az` CLI |
-| 2 | Internalize the Azure networking model: Virtual Networks, subnets, NSGs, service delegation, and why Databricks requires **two** subnets (public + private) even for private-link deployments | Deploy a VNet with correct `Microsoft.Databricks/workspaces` subnet delegation using the exact Terraform module structure from the repo |
+| 2 | Internalize the Azure networking model: Virtual Networks, subnets, NSGs, service delegation, and why Databricks requires **two** subnets (container + host) even for Secure Cluster Connectivity / No Public IP deployments | Deploy a VNet with correct `Microsoft.Databricks/workspaces` subnet delegation using the exact Terraform module structure from the repo |
 | 3 | Master the three Azure identity primitives — Service Principals, Managed Identities, and User Assigned Managed Identities — and when each is appropriate | Create an Entra ID Service Principal, rotate its secret on a 90-day lifecycle, and register it inside Databricks via `databricks_service_principal` |
 | 4 | Comprehend Azure RBAC: scope, role definitions, assignments, and the critical distinction between Control Plane (ARM) and Data Plane (ADLS) permissions | Grant `Storage Blob Data Contributor` at the storage account scope using `azurerm_role_assignment` — the exact binding that lets Databricks notebooks read/write ADLS data |
 | 5 | Understand secrets lifecycle: why Key Vault exists, RBAC vs. access policy authentication, soft-delete mechanics, and how Databricks Secret Scopes bridge the two platforms | Deploy a Key Vault, store the ADLS access key, and mount a Databricks Secret Scope backed by that vault — the foundation for the repo's `PipelineConfig._get_secret()` method |
@@ -77,8 +77,8 @@ resource "azurerm_subnet" "private" {
 
 **Architectural rationale — why TWO subnets?**
 
-- **Public subnet:** Hosts cluster nodes that need outbound internet access (driver node pulling PyPI packages, Spark libraries). The NSG allows `AzureDatabricks` service tag on port 443 for control-plane communication.
-- **Private subnet:** Hosts worker nodes for inter-cluster communication. In private-link deployments (the repo's `no_public_ip = true` path), all nodes go here.
+- **Container subnet (historically labelled "public" in Azure):** Every cluster node — driver AND all workers — gets a container network interface here. Without Secure Cluster Connectivity, these NICs receive public IPs for outbound internet access (PyPI packages, Spark libraries). The NSG allows `AzureDatabricks` service tag on port 443 for control-plane communication.
+- **Host subnet (historically labelled "private" in Azure):** Hosts the underlying Azure VMs that run the Databricks containers. In Secure Cluster Connectivity / No Public IP deployments (the repo's `no_public_ip = true` path), these VMs use private IPs only — all outbound traffic routes through the container subnet's NAT gateway or Azure Firewall.
 - **The delegation is NOT optional:** Without `Microsoft.Databricks/workspaces` delegation, Databricks cannot attach network interfaces to the subnet. The error is obscure: `"Subnet does not have delegation"` at workspace creation time.
 
 **NSG rule semantics (the two inbound rules in the repo):**

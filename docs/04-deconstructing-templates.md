@@ -696,7 +696,7 @@ dbutils.widgets.text("storage_account", "stdevdatabricksdl")
 "~> 1.2" is not a valid semantic version.
 ```
 
-**Root cause:** dbt 1.8+ requires strict semver arrays. The `~>` operator was removed.
+**Root cause:** The `~>` (pessimistic version constraint) operator is native to Terraform and RubyGems, **not** to dbt. dbt's package manager strictly parses standard semantic version strings and arrays. If you used a `packages.yml` syntax copied from a Terraform or Ruby project, it will fail.
 
 **Fix:** The repo's `packages.yml` already uses the correct format:
 ```yaml

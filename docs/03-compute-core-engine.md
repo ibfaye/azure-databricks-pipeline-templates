@@ -41,7 +41,7 @@ This seemingly simple YAML block defines a cluster with 1 Driver + 2–10 Worker
 ┌─────────────────────────────────────────────────────────────────┐
 │ Databricks Control Plane                                         │
 │  ┌──────────┐                                                    │
-│  │  Driver   │  Standard_DS3_v2 (4 vCPU, 14 GB RAM)             │
+│  │  Driver   │  Standard_DS3_v2 (4 vCPU, 14 GiB RAM)             │
 │  │  Node     │  - Parses Python notebook                         │
 │  │           │  - Catalyst optimizer: logical → physical plan    │
 │  │           │  - DAG Scheduler: splits plan into Stages         │
@@ -54,7 +54,7 @@ This seemingly simple YAML block defines a cluster with 1 Driver + 2–10 Worker
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐             │     │
 │  │  │ Worker 1  │  │ Worker 2  │  │ Worker 3  │  ... N    │     │
 │  │  │ 4 vCPU    │  │ 4 vCPU    │  │ 4 vCPU    │             │     │
-│  │  │ 14 GB RAM │  │ 14 GB RAM │  │ 14 GB RAM │             │     │
+│  │  │ 14 GiB RAM │  │ 14 GiB RAM │  │ 14 GiB RAM │             │     │
 │  │  │           │  │           │  │           │             │     │
 │  │  │ Task 0    │  │ Task 3    │  │ Task 6    │             │     │
 │  │  │ Task 1    │  │ Task 4    │  │ Task 7    │             │     │
@@ -250,7 +250,7 @@ The repo pins `14.3.x-scala2.12`. Here's the decision framework:
 **When to upgrade from `14.3.x`:**
 - **Photon for Gold:** If Gold aggregation takes > 5 minutes, switching to Photon runtime with the same cluster size typically cuts time in half
 - **Liquid Clustering (DBR 13.3+):** Replace manual Z-Ordering with `CLUSTER BY` for automatic optimization
-- **Predictive Optimization (DBR 14.0+):** Databricks automatically runs `OPTIMIZE` and `VACUUM` — reduces the need for explicit pipeline steps
+- **Predictive Optimization (account-level feature, enabled by default on new workspaces):** Databricks automatically runs `OPTIMIZE`, `ANALYZE`, and `VACUUM` on Unity Catalog managed tables using serverless compute — reduces the need for explicit pipeline optimization steps
 
 ### 2.6 PySpark vs. UDFs: The Performance Cliff
 
@@ -505,7 +505,7 @@ Then run Gold aggregation on both Standard and Photon clusters and compare.
 org.apache.spark.memory.SparkOutOfMemoryError: Unable to acquire 256 MB of memory
 ```
 
-**Root cause:** The `Standard_DS3_v2` node has 14 GB RAM. Spark reserves ~40% for execution memory (~5.6 GB). With 4 tasks/executor, each task gets ~1.4 GB. If a single row group in Parquet exceeds this, the executor OOMs.
+**Root cause:** The `Standard_DS3_v2` node has 14 GiB RAM. Spark reserves ~40% for execution memory (~5.6 GiB). With 4 tasks/executor, each task gets ~1.4 GiB. If a single row group in Parquet exceeds this, the executor OOMs.
 
 **Fix:**
 ```python
@@ -513,7 +513,7 @@ org.apache.spark.memory.SparkOutOfMemoryError: Unable to acquire 256 MB of memor
 spark.conf.set("spark.memory.fraction", "0.8")  # Give Spark 80% instead of 60%
 
 # Option B: Use larger instance type
-node_type_id = "Standard_DS4_v2"  # 8 vCPU, 28 GB RAM
+node_type_id = "Standard_DS4_v2"  # 8 vCPU, 28 GiB RAM
 
 # Option C: Reduce max partitions read per executor
 spark.conf.set("spark.sql.files.maxPartitionBytes", "134217728")  # 128 MB
