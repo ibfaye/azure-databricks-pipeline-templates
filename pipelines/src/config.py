@@ -79,10 +79,7 @@ class PipelineConfig:
     def _get_secret(secret_name: str, scope: str = "pipeline-secrets") -> str:
         """Fetch a secret from Databricks secret scope, with env var fallback."""
         try:
-            from pyspark.sql import SparkSession
-            spark = SparkSession.builder.getOrCreate()
-            # Databricks secrets utility
-            return spark.conf.get(f"spark.databricks.secret.{scope}.{secret_name}", "")
+            return dbutils.secrets.get(scope, secret_name)  # type: ignore
         except Exception:
             return os.getenv(secret_name.upper().replace("-", "_"), "")
 

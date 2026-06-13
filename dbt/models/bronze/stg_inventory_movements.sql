@@ -4,7 +4,7 @@
 -- Source: Warehouse management system
 
 WITH source AS (
-    SELECT * FROM {{ source('landing', 'raw_inventory_movements') }}
+    SELECT * FROM {{ source('landing_inventory', 'raw_inventory_movements') }}
 )
 
 SELECT

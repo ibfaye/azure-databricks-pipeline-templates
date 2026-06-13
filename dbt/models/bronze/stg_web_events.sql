@@ -4,7 +4,7 @@
 -- Source: Clickstream collector
 
 WITH source AS (
-    SELECT * FROM {{ source('landing', 'raw_web_events') }}
+    SELECT * FROM {{ source('landing_web', 'raw_web_events') }}
 )
 
 SELECT

@@ -4,7 +4,7 @@
 -- Source: POS/ERP system via ADLS landing zone
 
 WITH source AS (
-    SELECT * FROM {{ source('landing', 'raw_sales_transactions') }}
+    SELECT * FROM {{ source('landing_sales', 'raw_sales_transactions') }}
 )
 
 SELECT

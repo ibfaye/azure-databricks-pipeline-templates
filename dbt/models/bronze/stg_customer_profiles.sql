@@ -4,7 +4,7 @@
 -- Source: CRM system
 
 WITH source AS (
-    SELECT * FROM {{ source('landing', 'raw_customer_profiles') }}
+    SELECT * FROM {{ source('landing_customers', 'raw_customer_profiles') }}
 )
 
 SELECT

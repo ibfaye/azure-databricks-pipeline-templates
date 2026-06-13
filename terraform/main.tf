@@ -152,7 +152,7 @@ resource "databricks_sql_endpoint" "main" {
   auto_stop_mins   = var.environment == "prod" ? 30 : 10
 
   channel {
-    name = "CHANNEL_NAME_PREVIEW"
+    name = "CHANNEL_NAME_CURRENT"
   }
 
   tags {

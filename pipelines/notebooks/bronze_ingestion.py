@@ -36,7 +36,7 @@ print(f"   Landing path: {config.landing_path}")
 try:
     # Read from landing zone
     sales_raw = reader.read_parquet(f"{config.landing_path}sales_transactions/")
-    sales_raw = sales_raw.withColumn("_source_name", lit("sales_transactions"))
+    sales_raw = sales_raw.withColumn("_source_name", lit("sales_transactions")).withColumn("_ingested_at", current_timestamp())
 
     # Deduplicate
     dedup = Deduplicator(unique_keys=["transaction_id", "transaction_date"])

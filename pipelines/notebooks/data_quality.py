@@ -19,13 +19,13 @@ from pipelines.src.config import PipelineConfig
 from pipelines.src.transformers import DataValidator, DataQualityException
 from pyspark.sql.functions import col, count, countDistinct, sum as spark_sum, max as spark_max
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 config = PipelineConfig.from_widgets()
 validator = DataValidator(null_threshold_pct=config.null_threshold_pct)
 
 dq_results = {
-    "run_timestamp": datetime.utcnow().isoformat(),
+    "run_timestamp": datetime.now(timezone.utc).isoformat(),
     "environment": config.environment,
     "checks": [],
 }

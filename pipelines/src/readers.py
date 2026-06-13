@@ -57,14 +57,14 @@ class DataLakeReader:
     def read_stream(
         self,
         path: str,
-        format: str = "cloudFiles",
+        source_format: str = "parquet",
         schema_location: Optional[str] = None,
         **options
     ) -> DataFrame:
         """Read streaming data using Auto Loader (cloudFiles)."""
         stream = (
-            self.spark.readStream.format(format)
-            .option("cloudFiles.format", format)
+            self.spark.readStream.format("cloudFiles")
+            .option("cloudFiles.format", source_format)
             .option("cloudFiles.schemaLocation", schema_location or self.config.checkpoint_path)
             .option("cloudFiles.inferColumnTypes", "true")
             .option("cloudFiles.schemaEvolutionMode", "addNewColumns")

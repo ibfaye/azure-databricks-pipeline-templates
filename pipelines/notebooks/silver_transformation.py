@@ -47,6 +47,7 @@ try:
     sales_masked = masker.bronze_to_silver(sales_validated, {
         "customer_email": "hash",
     })
+    sales_masked = sales_masked.withColumnRenamed("customer_email", "customer_email_hashed")
 
     # Write to Silver
     uc_writer.write_table(
@@ -97,10 +98,13 @@ except Exception as e:
 # DBTITLE 1,Run dbt Silver Models
 try:
     # Execute dbt silver models
-    dbt_command = dbutils.widgets.get("dbt_command") if "dbt_command" in dbutils.widgets.entryBox.get() else "run --select silver.*"
+    try:
+        dbt_command = dbutils.widgets.get("dbt_command")
+    except Exception:
+        dbt_command = "run --select silver.*"
 
     result = subprocess.run(
-        ["dbt", dbt_command, "--target", config.environment],
+        ["dbt"] + dbt_command.split(),
         cwd="/Workspace/Shared/dbt/",
         capture_output=True,
         text=True,

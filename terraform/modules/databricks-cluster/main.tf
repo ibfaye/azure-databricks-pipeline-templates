@@ -21,8 +21,8 @@ resource "databricks_cluster" "all_purpose" {
     max_workers = var.autoscale_max_workers
   }
 
-  # Enable Unity Catalog by default
-  data_security_mode = "USER_ISOLATION"
+  # All-purpose cluster — shared interactive use
+  data_security_mode = "SINGLE_USER"
   single_user_name   = data.databricks_current_user.main.user_name
 
   dynamic "library" {
@@ -68,9 +68,7 @@ resource "databricks_cluster" "jobs" {
 
   data_security_mode = "SINGLE_USER"
   single_user_name   = data.databricks_current_user.main.user_name
-  spark_conf = merge(var.spark_conf, {
-    "spark.databricks.cluster.profile" = "singleNode"
-  })
+  spark_conf         = var.spark_conf
 
   dynamic "library" {
     for_each = var.library_pypi

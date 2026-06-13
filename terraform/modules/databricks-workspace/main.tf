@@ -209,3 +209,29 @@ resource "databricks_grants" "bronze_catalog" {
     privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
   }
 }
+
+resource "databricks_grants" "silver_catalog" {
+  provider = databricks.workspace
+  catalog  = databricks_catalog.silver.name
+  grant {
+    principal  = var.admin_group_name
+    privileges = ["ALL_PRIVILEGES"]
+  }
+  grant {
+    principal  = var.reader_group_name
+    privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
+  }
+}
+
+resource "databricks_grants" "gold_catalog" {
+  provider = databricks.workspace
+  catalog  = databricks_catalog.gold.name
+  grant {
+    principal  = var.admin_group_name
+    privileges = ["ALL_PRIVILEGES"]
+  }
+  grant {
+    principal  = var.reader_group_name
+    privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
+  }
+}

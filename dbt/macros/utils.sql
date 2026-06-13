@@ -79,8 +79,9 @@
   Keeps original for bronze; silver masks; gold never sees PII.
 #}
 {% macro mask_pii(column_name, strategy='hash') %}
+    {% set salt = env_var('DBT_PII_SALT', 'databricks-pii-salt-2025') %}
     {% if strategy == 'hash' %}
-        sha2({{ column_name }}, 256)
+        sha2(concat_ws('|', '{{ salt }}', {{ column_name }}), 256)
     {% elif strategy == 'null' %}
         null
     {% elif strategy == 'mask_email' %}

@@ -149,10 +149,13 @@ except Exception as e:
 # COMMAND ----------
 # DBTITLE 1,Run dbt Gold Models
 try:
-    dbt_command = dbutils.widgets.get("dbt_command") if "dbt_command" in dbutils.widgets.entryBox.get() else "run --select gold.*"
+    try:
+        dbt_command = dbutils.widgets.get("dbt_command")
+    except Exception:
+        dbt_command = "run --select gold.*"
 
     result = subprocess.run(
-        ["dbt", dbt_command, "--target", config.environment],
+        ["dbt"] + dbt_command.split(),
         cwd="/Workspace/Shared/dbt/",
         capture_output=True,
         text=True,

@@ -4,7 +4,7 @@
 -- Source: IoT hub -> ADLS streaming
 
 WITH source AS (
-    SELECT * FROM {{ source('landing', 'raw_iot_sensor_readings') }}
+    SELECT * FROM {{ source('landing_iot', 'raw_iot_sensor_readings') }}
 )
 
 SELECT
