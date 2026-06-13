@@ -1,6 +1,7 @@
 """
 Data transformation utilities for the medallion architecture.
 """
+import os
 from typing import List, Optional, Dict, Any
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import (
@@ -59,15 +60,12 @@ class DataValidator:
         self, df: DataFrame, timestamp_column: str, max_hours: int = 24
     ) -> DataFrame:
         """Validate that data is within the freshness window."""
-        from pyspark.sql.functions import max as spark_max, datediff, current_timestamp
+        from pyspark.sql.functions import max as spark_max
         max_ts = df.select(spark_max(col(timestamp_column))).collect()[0][0]
         if max_ts is None:
             raise DataQualityException("No data found — freshness check failed.")
-        hours_since = (
-            df.select(
-                (current_timestamp().cast("long") - col(timestamp_column).cast("long")) / 3600
-            ).first()[0]
-        )
+        from datetime import datetime, timezone
+        hours_since = (datetime.now(timezone.utc) - max_ts).total_seconds() / 3600
         if hours_since > max_hours:
             raise DataQualityException(
                 f"Data is {hours_since:.1f}h old — exceeds {max_hours}h freshness threshold."
@@ -90,7 +88,7 @@ class DataValidator:
 class PIIMasker:
     """Production PII masking for GDPR/CCPA compliance."""
 
-    SHA256_SALT: str = "databricks-pii-salt-2025"  # Override per deployment
+    SHA256_SALT: str = os.getenv("DBT_PII_SALT", "databricks-pii-salt-2025")
 
     @staticmethod
     def hash_column(df: DataFrame, column: str) -> DataFrame:

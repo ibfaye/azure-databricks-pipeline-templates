@@ -19,6 +19,7 @@ from pipelines.src.config import PipelineConfig
 from pipelines.src.readers import DataLakeReader
 from pipelines.src.writers import DeltaWriter, UnityCatalogWriter
 from pipelines.src.transformers import Deduplicator, DataValidator
+from pyspark.sql.functions import lit, current_timestamp
 
 # Load config from notebook widgets
 config = PipelineConfig.from_widgets()
