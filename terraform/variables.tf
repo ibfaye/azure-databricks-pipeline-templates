@@ -74,6 +74,32 @@ variable "reader_group_name" {
   default     = "analysts"
 }
 
+# ─── Cost Optimization ─────────────────────────────────────────────────────
+
+variable "single_node_enabled" {
+  description = "Deploy a single-node (0 workers) cluster for conceptual validation. Cuts compute costs by >=50%."
+  type        = bool
+  default     = true
+}
+
+variable "single_node_driver_type" {
+  description = "Driver node type for single-node cluster (memory-optimized for dbt compilation)"
+  type        = string
+  default     = "Standard_DS4_v2"
+}
+
+variable "spot_bid_max_price" {
+  description = "Max price for spot instances as % of on-demand (e.g., 80 = 80%). Uses SPOT_WITH_FALLBACK_AZURE. Null disables spot cluster."
+  type        = number
+  default     = 80
+}
+
+variable "cost_center_tag" {
+  description = "Cost center tag for budget tracking and attribution"
+  type        = string
+  default     = "data-engineering"
+}
+
 variable "tags" {
   description = "Additional tags for all resources"
   type        = map(string)

@@ -29,16 +29,24 @@ module "databricks" {
 }
 
 # ─── Databricks Clusters ───
+# ─── Databricks Clusters ───
+# Cost-safe defaults: 15-min auto-termination, single-node available,
+# spot with on-demand fallback, job clusters for pipelines.
 module "clusters" {
   source = "./modules/databricks-cluster"
 
-  environment           = var.environment
-  cluster_name          = "${var.project_name}-${var.environment}"
-  spark_version         = var.dbr_version
-  node_type_id          = var.cluster_node_type
-  autoscale_min_workers = var.autoscale_min_workers
-  autoscale_max_workers = var.autoscale_max_workers
-  custom_tags           = var.tags
+  environment             = var.environment
+  cluster_name            = "${var.project_name}-${var.environment}"
+  spark_version           = var.dbr_version
+  node_type_id            = var.cluster_node_type
+  autoscale_min_workers  = var.autoscale_min_workers
+  autoscale_max_workers  = var.autoscale_max_workers
+  spot_bid_max_price     = var.spot_bid_max_price
+  single_node_enabled    = var.single_node_enabled
+  single_node_driver_type = var.single_node_driver_type
+  custom_tags            = merge(var.tags, {
+    cost_center = var.cost_center_tag
+  })
 
   providers = {
     databricks = databricks.workspace
@@ -46,6 +54,18 @@ module "clusters" {
 }
 
 # ─── Databricks Workflows (Jobs) ───
+# NOTE: Workflows use job_cluster { new_cluster {} } — NOT existing clusters.
+# Job clusters spin up on-demand and terminate when the pipeline finishes.
+# This is 40-50% cheaper than All-Purpose compute (job DBUs vs interactive DBUs).
+#
+# COST OPTIMIZATION — State Management:
+#   - `terraform destroy` when stepping away for multiple days.
+#   - To retain Unity Catalog metadata across destroys:
+#       1. Comment out `module "databricks"` (preserves workspace + metastore)
+#       2. Destroy everything else: `terraform apply -target=module.azure`
+#       3. Ensure all clusters are TERMINATED (not just idle)
+#   - Static infrastructure (ADLS, Key Vault) costs ~$1-2/month when idle.
+
 resource "databricks_job" "medallion_pipeline" {
   name = "${var.project_name}-${var.environment}-medallion"
 

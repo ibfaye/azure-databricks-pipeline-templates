@@ -67,9 +67,9 @@ variable "custom_tags" {
 }
 
 variable "autotermination_minutes" {
-  description = "Auto-termination after N minutes of inactivity"
+  description = "Auto-termination after N minutes of inactivity. Default 15 for cost safety."
   type        = number
-  default     = 30
+  default     = 15
 }
 
 variable "spark_conf" {
@@ -101,4 +101,18 @@ variable "library_pypi" {
     { pypi = { package = "great-expectations>=1.0" } },
     { pypi = { package = "pyspark-stubs>=3.0.0" } },
   ]
+}
+
+# ─── Cost Optimization ─────────────────────────────────────────────────────
+
+variable "single_node_enabled" {
+  description = "Deploy a single-node (0 workers) cluster for conceptual validation and dbt compilation. Cuts compute costs by >=50%."
+  type        = bool
+  default     = true
+}
+
+variable "single_node_driver_type" {
+  description = "Driver node type for single-node cluster (defaults to a memory-optimized instance for dbt)"
+  type        = string
+  default     = "Standard_DS4_v2"
 }

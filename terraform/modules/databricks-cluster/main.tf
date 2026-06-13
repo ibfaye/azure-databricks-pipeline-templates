@@ -131,10 +131,59 @@ resource "databricks_cluster" "spot" {
   dynamic "azure_attributes" {
     for_each = var.spot_bid_max_price != null ? [1] : []
     content {
-      availability       = "SPOT_AZURE"
+      availability       = "SPOT_WITH_FALLBACK_AZURE"
       spot_bid_max_price = var.spot_bid_max_price
     }
   }
+}
+
+# --- Cost Optimization: Single-Node Cluster ---
+# Eliminates worker nodes entirely for conceptual validation and dbt compilation.
+# Cuts compute costs by at least 50% compared to a multi-node cluster.
+# Use for: Module 2 (data modeling), Module 4 (template deconstruction),
+#          Module 5 (dbt compilation, governance validation).
+# Do NOT use for: Module 3 shuffle mechanics testing (needs workers).
+resource "databricks_cluster" "single_node" {
+  count = var.single_node_enabled ? 1 : 0
+
+  cluster_name            = "${var.cluster_name}-single"
+  spark_version           = var.spark_version
+  node_type_id            = var.single_node_driver_type
+  autotermination_minutes = var.autotermination_minutes
+
+  # Single-node: 0 workers, all computation on the driver
+  num_workers = 0
+
+  spark_conf = merge(
+    var.spark_conf,
+    {
+      "spark.databricks.cluster.profile" = "singleNode"
+      "spark.master"                     = "local[*]"
+    }
+  )
+
+  data_security_mode = "SINGLE_USER"
+  single_user_name   = data.databricks_current_user.main.user_name
+
+  dynamic "library" {
+    for_each = var.library_pypi
+    content {
+      pypi {
+        package = library.value.pypi.package
+        repo    = library.value.pypi.repo
+      }
+    }
+  }
+
+  custom_tags = merge(
+    {
+      Environment   = var.environment
+      ClusterType   = "single-node"
+      ResourceClass = "SingleNode"
+      ManagedBy     = "terraform"
+    },
+    var.custom_tags
+  )
 }
 
 data "databricks_current_user" "main" {}
