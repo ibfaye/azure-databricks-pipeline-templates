@@ -43,6 +43,8 @@ jobs:
                 http_path: ${{ secrets.DATABRICKS_HTTP_PATH }}
                 token: ${{ secrets.DATABRICKS_TOKEN }}
                 threads: 4
+                session_properties:
+                  ANSI_MODE: true
           EOF
 
       - name: dbt deps

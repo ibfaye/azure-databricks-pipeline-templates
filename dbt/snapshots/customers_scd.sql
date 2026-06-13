@@ -1,0 +1,12 @@
+-- Placeholder: SCD Type 2 snapshot template
+-- Uncomment and customize for your slowly-changing dimensions:
+--
+-- {% snapshot customers_scd %}
+--   {{ config(
+--       target_schema='snapshots',
+--       unique_key='customer_id',
+--       strategy='timestamp',
+--       updated_at='_loaded_at'
+--   ) }}
+--   SELECT * FROM {{ ref('customers_cleaned') }}
+-- {% endsnapshot %}
