@@ -68,4 +68,3 @@ jobs:
       - name: Run TFLint
         run: tflint --recursive
         working-directory: terraform
-        continue-on-error: true
