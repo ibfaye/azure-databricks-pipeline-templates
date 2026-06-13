@@ -101,10 +101,11 @@ class DeltaWriter:
         zorder_by: Optional[List[str]] = None,
     ) -> None:
         """Run OPTIMIZE on a Delta table for read performance."""
-        self.spark.sql(f"OPTIMIZE delta.`{table_path}`")
         if zorder_by:
             zorder_cols = ", ".join(zorder_by)
             self.spark.sql(f"OPTIMIZE delta.`{table_path}` ZORDER BY ({zorder_cols})")
+        else:
+            self.spark.sql(f"OPTIMIZE delta.`{table_path}`")
 
     def vacuum(self, table_path: str, retention_hours: int = 168) -> None:
         """Clean up stale files older than retention window."""

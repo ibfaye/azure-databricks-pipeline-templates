@@ -73,6 +73,10 @@ resource "azuread_service_principal" "databricks_sp" {
 
 resource "azuread_service_principal_password" "databricks_sp" {
   service_principal_id = azuread_service_principal.databricks_sp.id
+
+  lifecycle {
+    replace_triggered_by = [time_rotating.sp_secret.id]
+  }
 }
 
 resource "time_rotating" "sp_secret" {

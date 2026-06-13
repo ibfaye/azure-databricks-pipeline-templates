@@ -33,7 +33,6 @@ job_clusters:
       node_type_id: "Standard_DS3_v2"
       data_security_mode: "SINGLE_USER"
       spark_conf:
-        spark.databricks.delta.preview.enabled: "true"
         spark.databricks.delta.optimizeWrite.enabled: "true"
         spark.databricks.delta.autoCompact.enabled: "true"
         spark.sql.adaptive.enabled: "true"

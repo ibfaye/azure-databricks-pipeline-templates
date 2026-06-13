@@ -76,7 +76,6 @@ variable "spark_conf" {
   description = "Spark configuration overrides"
   type        = map(string)
   default = {
-    "spark.databricks.delta.preview.enabled"        = "true"
     "spark.databricks.delta.optimizeWrite.enabled"  = "true"
     "spark.databricks.delta.autoCompact.enabled"    = "true"
     "spark.sql.adaptive.enabled"                    = "true"

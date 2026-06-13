@@ -102,7 +102,7 @@ resource "azurerm_storage_account" "datalake" {
   tags                     = var.tags
 
   blob_properties {
-    versioning_enabled       = var.environment == "prod"
+    versioning_enabled       = true
     change_feed_enabled      = true
     last_access_time_enabled = true
   }
@@ -151,7 +151,7 @@ resource "azurerm_key_vault" "main" {
   location                   = azurerm_resource_group.main.location
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   sku_name                   = "standard"
-  soft_delete_retention_days = 7
+  soft_delete_retention_days = 90
   tags                       = var.tags
 }
 

@@ -56,7 +56,6 @@ resource "databricks_job" "medallion_pipeline" {
       node_type_id       = var.cluster_node_type
       data_security_mode = "SINGLE_USER"
       spark_conf = {
-        "spark.databricks.delta.preview.enabled"       = "true"
         "spark.databricks.delta.optimizeWrite.enabled" = "true"
         "spark.databricks.delta.autoCompact.enabled"   = "true"
       }

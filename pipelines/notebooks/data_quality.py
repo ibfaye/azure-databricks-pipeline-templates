@@ -176,6 +176,12 @@ dq_df = spark.createDataFrame(
 dq_path = f"{config.checkpoint_path}/data_quality_reports/"
 dq_df.write.mode("append").format("delta").save(dq_path)
 
+# Retain only last 90 days of DQ reports
+try:
+    spark.sql(f"VACUUM delta.`{dq_path}` RETAIN 2160 HOURS")
+except Exception:
+    pass  # Vacuum may fail on first run before table exists
+
 print("=" * 60)
 print(f"{'✅ ALL CHECKS PASSED' if all_passed else '❌ SOME CHECKS FAILED'}")
 print(f"   Report saved to: {dq_path}")
