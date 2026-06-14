@@ -112,37 +112,37 @@ resource "azurerm_storage_account" "datalake" {
 
 resource "azurerm_storage_container" "bronze" {
   name                  = "bronze"
-  storage_account_name  = azurerm_storage_account.datalake.name
+  storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "silver" {
   name                  = "silver"
-  storage_account_name  = azurerm_storage_account.datalake.name
+  storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "gold" {
   name                  = "gold"
-  storage_account_name  = azurerm_storage_account.datalake.name
+  storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "checkpoint" {
   name                  = "checkpoint"
-  storage_account_name  = azurerm_storage_account.datalake.name
+  storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "landing" {
   name                  = "landing"
-  storage_account_name  = azurerm_storage_account.datalake.name
+  storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "metastore" {
   name                  = "${var.environment}-metastore"
-  storage_account_name  = azurerm_storage_account.datalake.name
+  storage_account_id    = azurerm_storage_account.datalake.id
   container_access_type = "private"
 }
 
