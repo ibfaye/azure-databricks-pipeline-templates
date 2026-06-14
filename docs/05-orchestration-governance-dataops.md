@@ -6,13 +6,13 @@
 
 ## 1. Learning Objectives
 
-| # | Conceptual | Practical |
-|---|-----------|-----------|
-| 1 | Master Databricks Workflows as a DAG orchestration engine: task dependencies, parameter passing, repair runs, retry policies, and the distinction from Airflow/Prefect | Deploy the exact `medallion_pipeline.yml` workflow via `databricks jobs create`, trigger a run, and interpret the run graph |
-| 2 | Internalize Unity Catalog governance: three-level namespaces (`catalog.schema.table`), fine-grained grants (`SELECT`, `MODIFY`, `ALL_PRIVILEGES`), lineage tracking, and the security model difference from `hive_metastore` | Grant `SELECT` on `gold.sales.daily_sales_summary` to a read-only group and verify they CANNOT query `bronze.sales.raw_sales_transactions` |
-| 3 | Design CI/CD pipelines for data platforms: infrastructure-as-code validation (terraform fmt/validate/tflint), dbt compilation/testing in CI, and immutable deployment patterns for notebook code | Set up a GitHub Actions workflow that runs `terraform validate`, `tflint`, and `dbt compile` on every PR — exactly as the repo's CI already does |
-| 4 | Implement observability: structured logging, pipeline metrics (row counts, durations, freshness), alerting on failure, and the `data_quality.py` → Delta table → dashboard pipeline | Query the DQ reports Delta table and build a simple dashboard showing pass/fail trends over 30 days |
-| 5 | Automate the full deployment lifecycle: from `git push` → CI validation → Databricks workspace update → workflow trigger | Implement a GitHub Action that runs `databricks workspace import` to push notebook changes and triggers a workflow run |
+| #   | Conceptual                                                                                                                                                                                                                   | Practical                                                                                                                                        |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | Master Databricks Workflows as a DAG orchestration engine: task dependencies, parameter passing, repair runs, retry policies, and the distinction from Airflow/Prefect                                                       | Deploy the exact `medallion_pipeline.yml` workflow via `databricks jobs create`, trigger a run, and interpret the run graph                      |
+| 2   | Internalize Unity Catalog governance: three-level namespaces (`catalog.schema.table`), fine-grained grants (`SELECT`, `MODIFY`, `ALL_PRIVILEGES`), lineage tracking, and the security model difference from `hive_metastore` | Grant `SELECT` on `gold.sales.daily_sales_summary` to a read-only group and verify they CANNOT query `bronze.sales.raw_sales_transactions`       |
+| 3   | Design CI/CD pipelines for data platforms: infrastructure-as-code validation (terraform fmt/validate/tflint), dbt compilation/testing in CI, and immutable deployment patterns for notebook code                             | Set up a GitHub Actions workflow that runs `terraform validate`, `tflint`, and `dbt compile` on every PR — exactly as the repo's CI already does |
+| 4   | Implement observability: structured logging, pipeline metrics (row counts, durations, freshness), alerting on failure, and the `data_quality.py` → Delta table → dashboard pipeline                                          | Query the DQ reports Delta table and build a simple dashboard showing pass/fail trends over 30 days                                              |
+| 5   | Automate the full deployment lifecycle: from `git push` → CI validation → Databricks workspace update → workflow trigger                                                                                                     | Implement a GitHub Action that runs `databricks workspace import` to push notebook changes and triggers a workflow run                           |
 
 ---
 
@@ -25,42 +25,43 @@ The repo's `medallion_pipeline.yml` defines a five-task DAG. Understanding its s
 ```yaml
 tasks:
   # Task 1: Bronze Ingestion (no dependencies — runs immediately)
-  - task_key: "bronze_ingestion"
+  - task_key: 'bronze_ingestion'
     notebook_task:
-      notebook_path: "/Shared/pipelines/medallion/bronze_ingestion"
+      notebook_path: '/Shared/pipelines/medallion/bronze_ingestion'
       base_parameters:
-        environment: "{{environment}}"
-        storage_account: "{{storage_account}}"
+        environment: '{{environment}}'
+        storage_account: '{{storage_account}}'
     timeout_seconds: 3600
     max_retries: 1
 
   # Task 2: Silver Transformation (depends on Task 1)
-  - task_key: "silver_transformation"
+  - task_key: 'silver_transformation'
     depends_on:
-      - task_key: "bronze_ingestion"
+      - task_key: 'bronze_ingestion'
     notebook_task:
-      notebook_path: "/Shared/pipelines/medallion/silver_transformation"
+      notebook_path: '/Shared/pipelines/medallion/silver_transformation'
       base_parameters:
-        environment: "{{environment}}"
-        dbt_command: "run --select silver.* --target {{environment}}"
+        environment: '{{environment}}'
+        dbt_command: 'run --select silver.* --target {{environment}}'
 
   # Task 3: Gold Aggregation (depends on Task 2)
-  - task_key: "gold_aggregation"
+  - task_key: 'gold_aggregation'
     depends_on:
-      - task_key: "silver_transformation"
+      - task_key: 'silver_transformation'
 
   # Task 4: Data Quality (depends on Task 3 — parallel to Task 5)
-  - task_key: "data_quality"
+  - task_key: 'data_quality'
     depends_on:
-      - task_key: "gold_aggregation"
+      - task_key: 'gold_aggregation'
 
   # Task 5: dbt Tests (depends on Task 3 — runs in parallel with Task 4)
-  - task_key: "dbt_tests"
+  - task_key: 'dbt_tests'
     depends_on:
-      - task_key: "gold_aggregation"
+      - task_key: 'gold_aggregation'
 ```
 
 **The resulting DAG:**
+
 ```
                         ┌─────────────────┐
                         │ bronze_ingestion │ (no dependencies)
@@ -82,45 +83,55 @@ tasks:
 **Key workflow features in the repo:**
 
 **1. Parameter passing via `{{mustache}}` syntax:**
+
 ```yaml
 parameters:
-  - name: "environment"
-    default: "dev"
-  - name: "storage_account"
-    default: "stdatabricksdl"
+  - name: 'environment'
+    default: 'dev'
+  - name: 'storage_account'
+    default: 'stdatabricksdl'
 ```
+
 These are defined at the workflow level and injected into each task's `base_parameters`. When you trigger a run with overrides, every task receives the same value:
+
 ```bash
 databricks jobs run-now --job-id 123 \
   --notebook-params '{"environment":"prod","storage_account":"stproddatabricksdl"}'
 ```
 
 **2. `max_retries` with `min_retry_interval_millis`:**
+
 ```yaml
 max_retries: 1
-min_retry_interval_millis: 300000  # 5 minutes
+min_retry_interval_millis: 300000 # 5 minutes
 ```
+
 If Bronze ingestion fails (transient ADLS throttling), Databricks waits 5 minutes, then retries once. This is a **linear retry** — for exponential backoff, you'd need to implement retry logic inside the notebook itself.
 
 **3. `timeout_seconds` as a safety net:**
+
 ```yaml
-timeout_seconds: 7200  # 2 hours for the entire workflow
+timeout_seconds: 7200 # 2 hours for the entire workflow
 ```
+
 Per-task timeouts protect against infinite loops:
+
 ```yaml
-- task_key: "bronze_ingestion"
-  timeout_seconds: 3600  # 1 hour max for bronze
+- task_key: 'bronze_ingestion'
+  timeout_seconds: 3600 # 1 hour max for bronze
 ```
 
 **4. Email notifications on failure:**
+
 ```yaml
 email_notifications:
   on_failure:
-    - "data-engineering@company.com"
+    - 'data-engineering@company.com'
   no_alert_for_skipped_runs: false
 ```
 
 **5. Repair runs — the operational superpower:**
+
 ```bash
 # Re-run only failed tasks (dependencies are respected)
 databricks jobs repair-run --run-id 456 --rerun-all-failed-tasks
@@ -173,6 +184,7 @@ resource "databricks_job" "medallion_pipeline" {
 ```
 
 **Why Terraform-managed workflows?**
+
 - **Infrastructure as Code:** The workflow definition is version-controlled alongside the infrastructure it depends on
 - **Parameter binding at deploy time:** Terraform resolves `${module.azure.storage_account_name}` at `terraform apply`, injecting the actual storage account name into the workflow
 - **Environment isolation:** `terraform apply -var="environment=prod"` creates a completely separate workflow with prod-specific parameters
@@ -183,6 +195,7 @@ resource "databricks_job" "medallion_pipeline" {
 The repo's Terraform module deploys a comprehensive Unity Catalog security model:
 
 **The three-catalog hierarchy with grants:**
+
 ```hcl
 # Bronze: admins get ALL_PRIVILEGES, readers get USE + SELECT
 resource "databricks_grants" "bronze_catalog" {
@@ -200,12 +213,12 @@ resource "databricks_grants" "bronze_catalog" {
 
 **The resulting access matrix:**
 
-| Principal | Bronze | Silver | Gold | Metastore |
-|-----------|--------|--------|------|-----------|
-| `admins` | ALL_PRIVILEGES | ALL_PRIVILEGES | ALL_PRIVILEGES | CREATE_CATALOG, CREATE_EXTERNAL_LOCATION, etc. |
-| `analysts` | USE_CATALOG, USE_SCHEMA, SELECT | USE_CATALOG, USE_SCHEMA, SELECT | USE_CATALOG, USE_SCHEMA, SELECT | (none — can't create) |
-| Data engineers (individual users) | ALL_PRIVILEGES | ALL_PRIVILEGES | ALL_PRIVILEGES | Inherits from group membership |
-| Service principal (`sp-unity-catalog-dev`) | Owner (via `databricks_service_principal`) | Owner | Owner | Storage credential creator |
+| Principal                                  | Bronze                                     | Silver                          | Gold                            | Metastore                                      |
+| ------------------------------------------ | ------------------------------------------ | ------------------------------- | ------------------------------- | ---------------------------------------------- |
+| `admins`                                   | ALL_PRIVILEGES                             | ALL_PRIVILEGES                  | ALL_PRIVILEGES                  | CREATE_CATALOG, CREATE_EXTERNAL_LOCATION, etc. |
+| `analysts`                                 | USE_CATALOG, USE_SCHEMA, SELECT            | USE_CATALOG, USE_SCHEMA, SELECT | USE_CATALOG, USE_SCHEMA, SELECT | (none — can't create)                          |
+| Data engineers (individual users)          | ALL_PRIVILEGES                             | ALL_PRIVILEGES                  | ALL_PRIVILEGES                  | Inherits from group membership                 |
+| Service principal (`sp-unity-catalog-dev`) | Owner (via `databricks_service_principal`) | Owner                           | Owner                           | Storage credential creator                     |
 
 **Why this matters operationally:**
 
@@ -214,6 +227,7 @@ resource "databricks_grants" "bronze_catalog" {
 3. **Service principal isolation:** The pipeline runs as a specific service principal with elevated storage permissions. No human has those credentials — they exist only in Terraform state and Databricks.
 
 **The `UnityCatalogWriter.grant_select()` helper:**
+
 ```python
 # From pipelines/src/writers.py
 def grant_select(self, catalog: str, schema: str, table: str, principal: str) -> None:
@@ -222,6 +236,7 @@ def grant_select(self, catalog: str, schema: str, table: str, principal: str) ->
 ```
 
 This is called programmatically after table creation — no manual SQL needed:
+
 ```python
 uc_writer.grant_select("gold", "sales", "daily_sales_summary", "analysts")
 ```
@@ -242,6 +257,7 @@ on:
 ```
 
 **Jobs:**
+
 1. **`fmt-validate`:** `terraform fmt -recursive` (auto-fix) → `terraform init -backend=false` → `terraform validate`
 2. **`tflint`:** `tflint --init` → `tflint --recursive`
 
@@ -256,14 +272,16 @@ on:
     paths: ['dbt/**', '.github/workflows/dbt-ci.yml']
 ```
 
-**Job: `dbt-validate`:** Install dbt-databricks → generate `profiles.yml` → `dbt deps` → `dbt compile --target ci`
+**Job: `dbt-validate`:** Install dbt-databricks (or Fusion-compatible adapter) → generate `profiles.yml` → `dbt deps` → `dbt compile --target ci`
 
 **The architectural insight:** Both workflows are **validate-only** — they check syntax and structure but don't connect to production resources. This is intentional:
+
 - Terraform validation uses `-backend=false` (no state file access needed)
 - dbt compile uses CI credentials with minimal permissions
 - Neither workflow can affect production
 
 **What's missing from the repo's CI (and you should add in Module 5):**
+
 - **Notebook deployment:** Pushing updated `.py` notebooks to the Databricks workspace
 - **Workflow trigger:** Automatically running the pipeline after a successful deployment
 - **Integration tests:** Running a subset of the pipeline against test data in CI
@@ -290,6 +308,7 @@ dq_df.write.mode("append").format("delta").save(dq_path)
 ```
 
 **This enables a complete observability stack:**
+
 ```
 Pipeline Run → data_quality.py → dq_reports Delta table
                                       │
@@ -299,6 +318,7 @@ Pipeline Run → data_quality.py → dq_reports Delta table
 ```
 
 **Building on this: you can query DQ trends:**
+
 ```sql
 -- Count failures over the last 7 days
 SELECT
@@ -425,6 +445,7 @@ ORDER BY run_date DESC, failure_rate_pct DESC;
 ```
 
 Then create a Databricks SQL Dashboard with:
+
 - **Line chart:** Failure rate over time
 - **Table:** Latest failures with detail messages
 - **Counter:** Total pipeline runs, overall pass rate
@@ -486,6 +507,7 @@ jobs:
 ```
 
 **Add required secrets to GitHub:**
+
 ```bash
 gh secret set DATABRICKS_HOST --body "https://adb-1234567890.7.azuredatabricks.net"
 gh secret set DATABRICKS_TOKEN --body "dapi..."
@@ -514,6 +536,7 @@ az monitor metrics alert create \
 ### 3.8 Implement the Full Deployment Lifecycle
 
 The complete flow:
+
 ```
 Developer pushes to main branch
         │
@@ -547,16 +570,16 @@ Databricks Workflow executes:
 
 ### 4.1 Verification Checklist
 
-| ✓ | Check | Command / Assertion |
-|---|-------|-------------------|
-| ☐ | Workflow deployed and schedulable | `databricks jobs list` shows `medallion_pipeline` |
-| ☐ | Manual run completes all 5 tasks | `databricks runs get-output --run-id <id>` shows `result_state: SUCCESS` |
-| ☐ | Repair run re-executes only failed/downstream tasks | After simulating failure, repair run shows `silver`, `gold`, `dq`, `dbt_tests` re-run; `bronze` skipped |
-| ☐ | Analysts can query Gold but not Bronze | Run queries as analyst user — Gold succeeds, Bronze fails with permission error |
-| ☐ | DQ reports table accumulates records | `SELECT COUNT(*) FROM delta.\`<checkpoint_path>/data_quality_reports/\`` increases after each run |
-| ☐ | GitHub Actions CI passes on PR | `terraform-validate.yml` → ✅, `dbt-ci.yml` → ✅ |
-| ☐ | Notebook deployment updates workspace files | Check Databricks workspace → `/Shared/pipelines/medallion/bronze_ingestion` has latest commit SHA |
-| ☐ | Pipeline triggered automatically after push | Push to main → check Databricks Jobs UI for a new run |
+| ✓   | Check                                               | Command / Assertion                                                                                     |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| ☐   | Workflow deployed and schedulable                   | `databricks jobs list` shows `medallion_pipeline`                                                       |
+| ☐   | Manual run completes all 5 tasks                    | `databricks runs get-output --run-id <id>` shows `result_state: SUCCESS`                                |
+| ☐   | Repair run re-executes only failed/downstream tasks | After simulating failure, repair run shows `silver`, `gold`, `dq`, `dbt_tests` re-run; `bronze` skipped |
+| ☐   | Analysts can query Gold but not Bronze              | Run queries as analyst user — Gold succeeds, Bronze fails with permission error                         |
+| ☐   | DQ reports table accumulates records                | `SELECT COUNT(*) FROM delta.\`<checkpoint_path>/data_quality_reports/\`` increases after each run       |
+| ☐   | GitHub Actions CI passes on PR                      | `terraform-validate.yml` → ✅, `dbt-ci.yml` → ✅                                                        |
+| ☐   | Notebook deployment updates workspace files         | Check Databricks workspace → `/Shared/pipelines/medallion/bronze_ingestion` has latest commit SHA       |
+| ☐   | Pipeline triggered automatically after push         | Push to main → check Databricks Jobs UI for a new run                                                   |
 
 ### 4.2 Common Failure States
 
@@ -569,6 +592,7 @@ Error: Notebook does not exist at /Shared/pipelines/medallion/bronze_ingestion
 **Root cause:** The workflow YAML references notebooks that haven't been deployed to the workspace yet.
 
 **Fix:** Deploy notebooks BEFORE creating the workflow:
+
 ```bash
 # Deploy all notebooks
 for notebook in pipelines/notebooks/*.py; do
@@ -581,6 +605,7 @@ databricks jobs create --json @pipelines/workflows/medallion_pipeline.yml
 ```
 
 Or use Terraform's `depends_on` (in a more advanced setup):
+
 ```hcl
 resource "databricks_notebook" "bronze" {
   source = "${path.root}/../pipelines/notebooks/bronze_ingestion.py"
@@ -600,6 +625,7 @@ resource "databricks_job" "medallion" {
 **Root cause (common):** The `USE_CATALOG` and `USE_SCHEMA` grants must be explicitly given. `SELECT` alone is insufficient — the user needs `USE` on both the catalog and the schema to even "see" the table.
 
 **Fix:**
+
 ```sql
 -- The full grant chain
 GRANT USE_CATALOG ON CATALOG gold TO `analysts`;
@@ -608,6 +634,7 @@ GRANT SELECT ON TABLE gold.sales.daily_sales_summary TO `analysts`;
 ```
 
 The repo's Terraform grants `USE_CATALOG` at the catalog level, which cascades to all schemas:
+
 ```hcl
 grant {
   principal  = var.reader_group_name
@@ -624,6 +651,7 @@ Error: invalid access token
 **Root cause:** The `DATABRICKS_TOKEN` GitHub secret is expired or missing.
 
 **Fix:** Generate a new Databricks personal access token:
+
 ```bash
 # In Databricks workspace → User Settings → Developer → Access Tokens → Generate
 # Copy the token (shown only once)
@@ -632,6 +660,7 @@ gh secret set DATABRICKS_TOKEN --body "dapi..."
 ```
 
 **Production best practice:** Use a service principal token instead of a personal access token:
+
 ```bash
 databricks tokens create --comment "CI/CD deployment" --lifetime-seconds 7776000
 ```
@@ -643,6 +672,7 @@ databricks tokens create --comment "CI/CD deployment" --lifetime-seconds 7776000
 **Root cause:** The DQ notebook uses `mode="append"` but the vacuum doesn't clean up old data because the retention window (90 days) matches the vacuum window.
 
 **Fix:** The repo already handles this:
+
 ```python
 # From data_quality.py — automatic retention management
 try:
@@ -655,18 +685,18 @@ except Exception:
 
 Before deploying to production, verify:
 
-| # | Requirement | Implementation |
-|---|-------------|---------------|
-| 1 | Workflow scheduled with appropriate CRON | `quartz_cron_expression: "0 0 6 * * ?"` |
-| 2 | Max concurrent runs = 1 (prevents overlapping runs) | `max_concurrent_runs: 1` |
-| 3 | Email alerts configured | `email_notifications.on_failure: ["data-engineering@company.com"]` |
-| 4 | Separate dev/staging/prod environments | `environment` variable controls all differences |
-| 5 | Production uses premium SKU (Unity Catalog required) | `databricks_workspace_sku = "premium"` |
-| 6 | State file stored remotely (Azure Storage) | `backend "azurerm"` in `providers.tf` |
-| 7 | Secrets in Key Vault, never in code | `dbutils.secrets.get()` reads from AKV-backed scope |
-| 8 | Cost tags on all resources | `custom_tags: { cost_center: "data-engineering" }` |
-| 9 | Budget alerts configured | `az consumption budget create` |
-| 10 | CI/CD deploys automatically on merge to main | GitHub Actions → Databricks workspace |
+| #   | Requirement                                          | Implementation                                                     |
+| --- | ---------------------------------------------------- | ------------------------------------------------------------------ |
+| 1   | Workflow scheduled with appropriate CRON             | `quartz_cron_expression: "0 0 6 * * ?"`                            |
+| 2   | Max concurrent runs = 1 (prevents overlapping runs)  | `max_concurrent_runs: 1`                                           |
+| 3   | Email alerts configured                              | `email_notifications.on_failure: ["data-engineering@company.com"]` |
+| 4   | Separate dev/staging/prod environments               | `environment` variable controls all differences                    |
+| 5   | Production uses premium SKU (Unity Catalog required) | `databricks_workspace_sku = "premium"`                             |
+| 6   | State file stored remotely (Azure Storage)           | `backend "azurerm"` in `providers.tf`                              |
+| 7   | Secrets in Key Vault, never in code                  | `dbutils.secrets.get()` reads from AKV-backed scope                |
+| 8   | Cost tags on all resources                           | `custom_tags: { cost_center: "data-engineering" }`                 |
+| 9   | Budget alerts configured                             | `az consumption budget create`                                     |
+| 10  | CI/CD deploys automatically on merge to main         | GitHub Actions → Databricks workspace                              |
 
 ---
 

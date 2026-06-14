@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dbt-databricks
+      - name: Install dbt Fusion-compatible adapter
         run: pip install dbt-databricks
 
       - name: Generate profiles.yml

@@ -23,7 +23,7 @@ tflint --recursive              # Lint
 
 ```bash
 cd dbt
-pip install dbt-databricks
+pip install dbt-databricks # or use the Fusion-compatible dbt adapter
 dbt deps
 dbt compile --target dev
 ```

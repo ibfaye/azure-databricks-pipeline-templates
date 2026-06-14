@@ -20,18 +20,18 @@ End-to-end Azure Databricks pipeline templates built for **Sen'Analytics** data 
 
 ## ✨ Key Features
 
-| Capability | Implementation |
-|-----------|---------------|
-| **Infrastructure as Code** | Terraform modules — VNet, ADLS Gen2, Databricks, Unity Catalog, Key Vault |
-| **Data Governance** | Unity Catalog with 3-tier catalog hierarchy (bronze/silver/gold), RBAC grants, external locations |
-| **Medallion Architecture** | Bronze (raw ingestion) → Silver (cleansed/PII-masked) → Gold (business KPIs) |
-| **dbt Transformations** | 20+ dbt models — staging, incremental, SCD Type 2 snapshots, macros for surrogate keys & PII masking |
-| **Pipeline Orchestration** | Databricks Workflows with 5-task DAG — ingestion → dbt silver → dbt gold → data quality |
-| **Data Quality** | Automated DQ checks — row counts, freshness, null ratios, anomaly detection |
-| **CI/CD** | GitHub Actions — Terraform fmt/validate/tflint, dbt compile/test |
-| **Security** | VNet injection, private endpoints, service principal auth, Key Vault secrets, PII masking (SHA-256) |
-| **Multi-Environment** | Dev/Staging/Prod with environment-specific configurations |
-| **Cost Optimization** | Spot instances, auto-termination, autoscaling, SQL warehouse auto-stop |
+| Capability                 | Implementation                                                                                       |
+| -------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Infrastructure as Code** | Terraform modules — VNet, ADLS Gen2, Databricks, Unity Catalog, Key Vault                            |
+| **Data Governance**        | Unity Catalog with 3-tier catalog hierarchy (bronze/silver/gold), RBAC grants, external locations    |
+| **Medallion Architecture** | Bronze (raw ingestion) → Silver (cleansed/PII-masked) → Gold (business KPIs)                         |
+| **dbt Transformations**    | 20+ dbt models — staging, incremental, SCD Type 2 snapshots, macros for surrogate keys & PII masking |
+| **Pipeline Orchestration** | Databricks Workflows with 5-task DAG — ingestion → dbt silver → dbt gold → data quality              |
+| **Data Quality**           | Automated DQ checks — row counts, freshness, null ratios, anomaly detection                          |
+| **CI/CD**                  | GitHub Actions — Terraform fmt/validate/tflint, dbt compile/test                                     |
+| **Security**               | VNet injection, private endpoints, service principal auth, Key Vault secrets, PII masking (SHA-256)  |
+| **Multi-Environment**      | Dev/Staging/Prod with environment-specific configurations                                            |
+| **Cost Optimization**      | Spot instances, auto-termination, autoscaling, SQL warehouse auto-stop                               |
 
 ## 🏛 Architecture
 
@@ -107,7 +107,7 @@ metastore-{env}
 - [Terraform](https://developer.hashicorp.com/terraform/downloads) ≥ 1.5.0
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli) logged in
 - [Databricks CLI](https://docs.databricks.com/dev-tools/cli/index.html) (optional, for workflow deployment)
-- [dbt-databricks](https://github.com/databricks/dbt-databricks) (for local development)
+- [dbt-databricks](https://github.com/databricks/dbt-databricks) or the Fusion-compatible Databricks adapter (for local development)
 
 ### 1. Clone the Repository
 
@@ -124,6 +124,7 @@ cp terraform.tfvars.example terraform.tfvars
 ```
 
 Edit `terraform.tfvars` with your values:
+
 ```hcl
 azure_subscription_id = "your-subscription-id"
 azure_tenant_id       = "your-tenant-id"
@@ -145,6 +146,7 @@ terraform apply tfplan
 ```
 
 **What this creates (~15 min):**
+
 - Resource Group
 - VNet + Subnets + NSG
 - ADLS Gen2 with Bronze/Silver/Gold containers
@@ -178,13 +180,13 @@ dbt test       # Run data quality tests
 
 ## 📊 Use Cases
 
-| Industry | Use Case | Models Used |
-|----------|---------|-------------|
-| **Retail / E-commerce** | Sales analytics, customer 360, inventory optimization | `daily_sales_summary`, `customer_360`, `inventory_health`, `web_conversion_funnel` |
-| **IoT / Manufacturing** | Predictive maintenance, sensor anomaly detection | `iot_readings_validated`, `iot_anomaly_dashboard` |
-| **Financial Services** | Transaction monitoring, fraud detection, regulatory reporting | `sales_transactions_cleaned` (with PII masking), audit snapshots |
-| **Marketing / MarTech** | Attribution modeling, campaign ROI, user behavior analysis | `web_sessions_enriched`, `web_conversion_funnel`, `customer_360` |
-| **Supply Chain** | Real-time inventory, demand forecasting, supplier analytics | `inventory_snapshots`, `inventory_health` |
+| Industry                | Use Case                                                      | Models Used                                                                        |
+| ----------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Retail / E-commerce** | Sales analytics, customer 360, inventory optimization         | `daily_sales_summary`, `customer_360`, `inventory_health`, `web_conversion_funnel` |
+| **IoT / Manufacturing** | Predictive maintenance, sensor anomaly detection              | `iot_readings_validated`, `iot_anomaly_dashboard`                                  |
+| **Financial Services**  | Transaction monitoring, fraud detection, regulatory reporting | `sales_transactions_cleaned` (with PII masking), audit snapshots                   |
+| **Marketing / MarTech** | Attribution modeling, campaign ROI, user behavior analysis    | `web_sessions_enriched`, `web_conversion_funnel`, `customer_360`                   |
+| **Supply Chain**        | Real-time inventory, demand forecasting, supplier analytics   | `inventory_snapshots`, `inventory_health`                                          |
 
 See [`docs/use-cases/`](docs/use-cases/) for detailed scenario walkthroughs.
 
@@ -240,16 +242,16 @@ azure-databricks-pipeline-templates/
 
 ## 🔐 Security
 
-| Layer | Implementation |
-|-------|---------------|
-| **Network** | VNet injection, private subnets, NSG rules for Databricks control plane only |
-| **Authentication** | Azure AD service principal — no static credentials in code |
-| **Secrets** | Azure Key Vault — ADLS keys, SP secrets, 90-day rotation |
-| **Data at Rest** | ADLS Gen2 encryption, TLS 1.2 minimum |
-| **Data in Transit** | HTTPS only, no public IP on Databricks workspace |
-| **PII Protection** | SHA-256 hashing with salt in silver layer, complete PII removal in gold |
-| **Access Control** | Unity Catalog grants — admin (ALL_PRIVILEGES) vs reader (SELECT only) |
-| **Audit** | `_loaded_at`, `_loaded_by`, `_databricks_runtime_version` on every row |
+| Layer               | Implementation                                                               |
+| ------------------- | ---------------------------------------------------------------------------- |
+| **Network**         | VNet injection, private subnets, NSG rules for Databricks control plane only |
+| **Authentication**  | Azure AD service principal — no static credentials in code                   |
+| **Secrets**         | Azure Key Vault — ADLS keys, SP secrets, 90-day rotation                     |
+| **Data at Rest**    | ADLS Gen2 encryption, TLS 1.2 minimum                                        |
+| **Data in Transit** | HTTPS only, no public IP on Databricks workspace                             |
+| **PII Protection**  | SHA-256 hashing with salt in silver layer, complete PII removal in gold      |
+| **Access Control**  | Unity Catalog grants — admin (ALL_PRIVILEGES) vs reader (SELECT only)        |
+| **Audit**           | `_loaded_at`, `_loaded_by`, `_databricks_runtime_version` on every row       |
 
 ## 📈 Observability
 
@@ -304,7 +306,7 @@ git push origin feature/new-data-source
 - [Databricks Terraform Provider](https://registry.terraform.io/providers/databricks/databricks/latest/docs)
 - [Azure Terraform Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 - [Unity Catalog Documentation](https://docs.databricks.com/data-governance/unity-catalog/index.html)
-- [dbt-databricks Adapter](https://github.com/databricks/dbt-databricks)
+- [dbt-databricks Adapter](https://github.com/databricks/dbt-databricks) / Fusion-compatible dbt adapter
 - [Medallion Architecture](https://www.databricks.com/glossary/medallion-architecture)
 
 ## 👤 About

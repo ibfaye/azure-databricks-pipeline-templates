@@ -8,14 +8,14 @@
 
 ## 📋 Curriculum Overview
 
-| Module | Focus | Lines | Est. Time |
-|--------|-------|-------|-----------|
-| [**01** — Foundation](01-foundation-infrastructure-identity.md) | Azure infrastructure, IAM, Key Vault, Terraform deployment | 526 | 3–4 hrs |
-| [**02** — Storage Architecture](02-storage-architecture-data-modeling.md) | ADLS Gen2, Medallion pattern, Delta Lake internals, optimization | 581 | 4–6 hrs |
-| [**03** — Compute & Core Engine](03-compute-core-engine.md) | Spark architecture, cluster topology, PySpark optimization, DBR selection | 606 | 5–7 hrs |
-| [**04** — Deconstructing the Templates](04-deconstructing-templates.md) | Full codebase analysis, idempotency, error handling, dbt integration | 775 | 6–8 hrs |
-| [**05** — Orchestration, Governance & DataOps](05-orchestration-governance-dataops.md) | Workflows DAG, Unity Catalog RBAC, CI/CD, observability | 692 | 5–7 hrs |
-| **Total** | **3,180 lines — ~140 KB of instruction** | | **23–32 hrs** |
+| Module                                                                                 | Focus                                                                     | Lines | Est. Time     |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----- | ------------- |
+| [**01** — Foundation](01-foundation-infrastructure-identity.md)                        | Azure infrastructure, IAM, Key Vault, Terraform deployment                | 526   | 3–4 hrs       |
+| [**02** — Storage Architecture](02-storage-architecture-data-modeling.md)              | ADLS Gen2, Medallion pattern, Delta Lake internals, optimization          | 581   | 4–6 hrs       |
+| [**03** — Compute & Core Engine](03-compute-core-engine.md)                            | Spark architecture, cluster topology, PySpark optimization, DBR selection | 606   | 5–7 hrs       |
+| [**04** — Deconstructing the Templates](04-deconstructing-templates.md)                | Full codebase analysis, idempotency, error handling, dbt integration      | 775   | 6–8 hrs       |
+| [**05** — Orchestration, Governance & DataOps](05-orchestration-governance-dataops.md) | Workflows DAG, Unity Catalog RBAC, CI/CD, observability                   | 692   | 5–7 hrs       |
+| **Total**                                                                              | **3,180 lines — ~140 KB of instruction**                                  |       | **23–32 hrs** |
 
 ---
 
@@ -94,12 +94,12 @@ Module 5: Orchestration, Governance & DataOps ───────────�
 
 Every module follows the same four-section format:
 
-| Section | Purpose |
-|---------|---------|
-| **1. Learning Objectives** | What conceptual + practical skills you'll master |
-| **2. Theoretical Foundations** | The design patterns, architectural constraints, and system thinking — grounded in actual repo code |
-| **3. Hands-on Execution** | Step-by-step technical implementation with exact commands and code |
-| **4. Validation & Troubleshooting** | How to verify success, plus common failure states with root cause analysis and fixes |
+| Section                             | Purpose                                                                                            |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **1. Learning Objectives**          | What conceptual + practical skills you'll master                                                   |
+| **2. Theoretical Foundations**      | The design patterns, architectural constraints, and system thinking — grounded in actual repo code |
+| **3. Hands-on Execution**           | Step-by-step technical implementation with exact commands and code                                 |
+| **4. Validation & Troubleshooting** | How to verify success, plus common failure states with root cause analysis and fixes               |
 
 ---
 
@@ -112,7 +112,7 @@ Before starting Module 1, have these ready:
 - [ ] Terraform ≥ 1.5.0 installed (`terraform version`)
 - [ ] Databricks CLI installed (`databricks --version`) — optional for Module 1, required for Module 5
 - [ ] GitHub CLI installed (`gh auth status`) — for CI/CD in Module 5
-- [ ] Python 3.10+ with pip (`pip install dbt-databricks` — needed by Module 4)
+- [ ] Python 3.10+ with pip (`pip install dbt-databricks` or a Fusion-compatible adapter — needed by Module 4)
 
 ---
 
@@ -184,13 +184,13 @@ Expected pace: ~1 module per day for a dedicated learner, or ~1 module per week 
 
 ## 📊 Completion Milestones
 
-| Module | Milestone | Verifiable By |
-|--------|-----------|---------------|
-| 1 | Zero-diff `terraform plan` | `terraform plan` → "No changes" |
-| 2 | Record traced through all 3 layers | SQL queries showing the same `transaction_id` in Bronze, Silver (masked), Gold (aggregated) |
-| 3 | Native function is 5×+ faster than equivalent UDF | Timed benchmark in notebook |
-| 4 | New dbt model routes to correct UC catalog | `dbt compile` output shows correct `catalog.schema` prefix |
-| 5 | `git push` → CI passes → pipeline runs → DQ dashboard shows results | Fully automated end-to-end |
+| Module | Milestone                                                           | Verifiable By                                                                               |
+| ------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 1      | Zero-diff `terraform plan`                                          | `terraform plan` → "No changes"                                                             |
+| 2      | Record traced through all 3 layers                                  | SQL queries showing the same `transaction_id` in Bronze, Silver (masked), Gold (aggregated) |
+| 3      | Native function is 5×+ faster than equivalent UDF                   | Timed benchmark in notebook                                                                 |
+| 4      | New dbt model routes to correct UC catalog                          | `dbt compile` output shows correct `catalog.schema` prefix                                  |
+| 5      | `git push` → CI passes → pipeline runs → DQ dashboard shows results | Fully automated end-to-end                                                                  |
 
 ---
 
