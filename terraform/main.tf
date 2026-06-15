@@ -19,6 +19,7 @@ module "databricks" {
   sku                   = var.databricks_workspace_sku
   public_subnet_id      = module.azure.public_subnet_id
   private_subnet_id     = module.azure.private_subnet_id
+  no_public_ip          = var.environment == "prod"  # Dev: allow public access for provisioning
   storage_account_name  = module.azure.storage_account_name
   storage_account_id    = module.azure.storage_account_id
   tenant_id             = module.azure.tenant_id
