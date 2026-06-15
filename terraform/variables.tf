@@ -62,6 +62,12 @@ variable "autoscale_max_workers" {
   default     = 10
 }
 
+variable "deploy_workspace_resources" {
+  description = "Set to true after Phase 1 (workspace created) to deploy clusters, jobs, SQL warehouse"
+  type        = bool
+  default     = false
+}
+
 variable "admin_group_name" {
   description = "Databricks admin group name"
   type        = string

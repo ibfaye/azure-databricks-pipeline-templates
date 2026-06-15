@@ -1,23 +1,24 @@
 # ═══════════════════════════════════════════════════════════
 # PHASE 2 — Workspace-level resources
 # ═══════════════════════════════════════════════════════════
-# These resources require the Databricks workspace to already
-# exist (workspace_url must be known). Apply AFTER phase 1:
+# Controlled by var.deploy_workspace_resources (default: false).
 #
-#   terraform apply -target=module.azure -target=module.databricks
-#   terraform apply    # picks up phase2 resources automatically
+# Phase 1:  terraform apply     → creates workspace + infra
+# Phase 2:  set deploy_workspace_resources = true in tfvars
+#           terraform apply     → creates clusters, jobs, SQL warehouse
 # ═══════════════════════════════════════════════════════════
 
 # ─── Databricks Clusters ───
 module "clusters" {
+  count  = var.deploy_workspace_resources ? 1 : 0
   source = "./modules/databricks-cluster"
 
-  environment            = var.environment
-  cluster_name           = "${var.project_name}-${var.environment}"
-  spark_version          = var.dbr_version
-  node_type_id           = var.cluster_node_type
-  autoscale_min_workers  = var.autoscale_min_workers
-  autoscale_max_workers  = var.autoscale_max_workers
+  environment           = var.environment
+  cluster_name          = "${var.project_name}-${var.environment}"
+  spark_version         = var.dbr_version
+  node_type_id          = var.cluster_node_type
+  autoscale_min_workers = var.autoscale_min_workers
+  autoscale_max_workers = var.autoscale_max_workers
 
   providers = {
     databricks = databricks.workspace
@@ -26,7 +27,8 @@ module "clusters" {
 
 # ─── Databricks Workflows (Jobs) ───
 resource "databricks_job" "medallion_pipeline" {
-  name = "${var.project_name}-${var.environment}-medallion"
+  count = var.deploy_workspace_resources ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-medallion"
 
   job_cluster {
     job_cluster_key = "default"
@@ -109,6 +111,7 @@ resource "databricks_job" "medallion_pipeline" {
 
 # ─── SQL Warehouse for BI ───
 resource "databricks_sql_endpoint" "main" {
+  count            = var.deploy_workspace_resources ? 1 : 0
   name             = "sql-warehouse-${var.environment}"
   cluster_size     = var.environment == "prod" ? "2X-Small" : "X-Small"
   min_num_clusters = 1

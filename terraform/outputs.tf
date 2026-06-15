@@ -25,12 +25,12 @@ output "key_vault_uri" {
 
 output "sql_warehouse_id" {
   description = "SQL Warehouse endpoint ID"
-  value       = databricks_sql_endpoint.main.id
+  value       = try(databricks_sql_endpoint.main[0].id, null)
 }
 
 output "medallion_job_url" {
   description = "Databricks job URL for the medallion pipeline"
-  value       = "${module.databricks.workspace_url}/#job/${databricks_job.medallion_pipeline.id}"
+  value       = var.deploy_workspace_resources ? "${module.databricks.workspace_url}/#job/${databricks_job.medallion_pipeline[0].id}" : null
 }
 
 output "service_principal_client_id" {
