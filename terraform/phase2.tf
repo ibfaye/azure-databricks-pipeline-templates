@@ -13,12 +13,18 @@ module "clusters" {
   count  = var.deploy_workspace_resources ? 1 : 0
   source = "./modules/databricks-cluster"
 
-  environment           = var.environment
-  cluster_name          = "${var.project_name}-${var.environment}"
-  spark_version         = var.dbr_version
-  node_type_id          = var.cluster_node_type
-  autoscale_min_workers = var.autoscale_min_workers
-  autoscale_max_workers = var.autoscale_max_workers
+  environment            = var.environment
+  cluster_name           = "${var.project_name}-${var.environment}"
+  spark_version          = var.dbr_version
+  node_type_id           = var.cluster_node_type
+  autoscale_min_workers  = var.autoscale_min_workers
+  autoscale_max_workers  = var.autoscale_max_workers
+  spot_bid_max_price     = var.spot_bid_max_price
+  single_node_enabled    = var.single_node_enabled
+  single_node_driver_type = var.single_node_driver_type
+  custom_tags            = merge(var.tags, {
+    cost_center = var.cost_center_tag
+  })
 
   providers = {
     databricks = databricks.workspace
