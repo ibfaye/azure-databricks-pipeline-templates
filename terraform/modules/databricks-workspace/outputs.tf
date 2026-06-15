@@ -1,6 +1,11 @@
 output "workspace_id" {
-  description = "Databricks workspace ID"
+  description = "Databricks workspace numeric ID"
   value       = azurerm_databricks_workspace.main.workspace_id
+}
+
+output "workspace_resource_id" {
+  description = "Azure resource ID (for provider auth)"
+  value       = azurerm_databricks_workspace.main.id
 }
 
 output "workspace_url" {

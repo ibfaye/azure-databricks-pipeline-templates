@@ -24,12 +24,12 @@ terraform {
     }
   }
 
-  # backend "azurerm" {
-  #   resource_group_name  = "rg-terraform-state"
-  #   storage_account_name = "stterraformstate"
-  #   container_name       = "tfstate"
-  #   key                  = "databricks-pipeline.tfstate"
-  # }
+  #   backend "azurerm" {
+  #     resource_group_name  = "rg-terraform-state"
+  #     storage_account_name = "stterraformstate"
+  #     container_name       = "tfstate"
+  #     key                  = "databricks-pipeline.tfstate"
+  #   }
 }
 
 # ─── Azure Provider ───
@@ -58,7 +58,7 @@ provider "databricks" {
 
   # Resolved at apply time (workspace must exist first)
   host                        = module.databricks.workspace_url
-  azure_workspace_resource_id = module.databricks.workspace_id
+  azure_workspace_resource_id = module.databricks.workspace_resource_id
   azure_tenant_id             = module.azure.tenant_id
 
   # Auth: inherits ARM_CLIENT_ID / ARM_CLIENT_SECRET from azurerm provider (SP auth)
