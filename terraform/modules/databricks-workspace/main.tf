@@ -106,8 +106,7 @@ resource "databricks_catalog" "bronze" {
   storage_root = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
   properties = {
     layer = "bronze"
-  }
-  depends_on = [databricks_metastore_assignment.main]
+  }
 }
 
 resource "databricks_catalog" "silver" {
@@ -117,8 +116,7 @@ resource "databricks_catalog" "silver" {
   storage_root = "abfss://silver@${var.storage_account_name}.dfs.core.windows.net/"
   properties = {
     layer = "silver"
-  }
-  depends_on = [databricks_metastore_assignment.main]
+  }
 }
 
 resource "databricks_catalog" "gold" {
@@ -128,8 +126,7 @@ resource "databricks_catalog" "gold" {
   storage_root = "abfss://gold@${var.storage_account_name}.dfs.core.windows.net/"
   properties = {
     layer = "gold"
-  }
-  depends_on = [databricks_metastore_assignment.main]
+  }
 }
 
 # ─── Default schemas ───
