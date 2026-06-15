@@ -2,13 +2,11 @@
 
 ## Pre-flight Checklist
 
-Before deploying, ensure you have:
-
 - [ ] Azure subscription with **Contributor** role
-- [ ] Databricks account (Premium tier required for Unity Catalog)
+- [ ] Databricks account (Premium tier for Unity Catalog)
 - [ ] Terraform ≥ 1.5.0 installed
-- [ ] Azure CLI logged in (`az login`)
-- [ ] A coffee ☕ (deployment takes ~15 minutes)
+- [ ] Azure CLI logged in
+- [ ] Sufficient vCPU quota in your target region (or use `eastus`/`westeurope`)
 
 ## Step-by-Step
 
@@ -25,177 +23,140 @@ Edit `terraform.tfvars`:
 ```hcl
 azure_subscription_id   = "11111111-2222-3333-4444-555555555555"
 azure_tenant_id         = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
-databricks_account_id   = "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj"
+databricks_account_id   = "ffffffff-gggg-hhhh-iiii-jjjjjjjjjjjj"  # UUID from accounts.azuredatabricks.net, NOT workspace ID
 project_name            = "my-client-project"
 environment             = "dev"
-location                = "westeurope"  # or northeurope, eastus, etc.
+location                = "eastus"  # or westeurope — choose a region with free quota
 ```
 
 ### 2. Authenticate
 
 ```bash
-# Azure CLI
-az login
-az account set --subscription "$(grep azure_subscription_id terraform.tfvars | cut -d'"' -f2)"
-
-# Set environment variables for Terraform
-export ARM_SUBSCRIPTION_ID=$(grep azure_subscription_id terraform.tfvars | cut -d'"' -f2)
-export ARM_TENANT_ID=$(grep azure_tenant_id terraform.tfvars | cut -d'"' -f2)
+az login --tenant <tenant-id> --use-device-code
+az account set --subscription "<subscription-id>"
 ```
 
-### 3. Deploy Infrastructure
+### 3. Phase 1 — Core Infrastructure
+
+Terraform deploys in two phases to avoid a chicken-and-egg problem with the Databricks provider.
 
 ```bash
 terraform init
-terraform plan -out=tfplan
-terraform apply tfplan
+
+# Phase 1: Azure resources + Databricks workspace (deploy_workspace_resources defaults to false)
+terraform apply
 ```
 
-**What happens during apply:**
+**What Phase 1 creates (~12 min):**
 
 | Time | Resource |
 |------|----------|
-| 0-2 min | Resource Group, VNet, Subnets |
-| 2-5 min | ADLS Gen2, Key Vault, NSG |
-| 5-10 min | Databricks Workspace |
-| 10-15 min | Unity Catalog, Service Principal, Grants, SQL Warehouse |
+| 0-2 min | Resource Group, VNet, Subnets, NSG |
+| 2-5 min | ADLS Gen2 (7 containers), Key Vault |
+| 5-12 min | Databricks Workspace (Premium, VNet-injected) |
 
-### 4. Verify Deployment
+### 4. Create Unity Catalog (30 seconds)
 
-```bash
-# Get outputs
-terraform output
+Unity Catalog catalogs require account admin for external locations. Create them via the Databricks UI:
 
-# Example output:
-# databricks_workspace_url = "https://adb-123456789.azuredatabricks.net"
-# storage_account_name    = "stdevdatabricksdl"
-# key_vault_uri           = "https://kv-dev-dbx-abc123.vault.azure.net/"
-# sql_warehouse_id        = "abc123def456"
+1. Open your workspace at the URL from `terraform output databricks_workspace_url`
+2. **Catalog** → **Create Catalog** → Name: `bronze` → select storage → Create
+3. Repeat for `silver` and `gold`
+4. In **SQL Editor**, run:
+```sql
+CREATE SCHEMA IF NOT EXISTS bronze.sales;
+CREATE SCHEMA IF NOT EXISTS bronze.customers;
+CREATE SCHEMA IF NOT EXISTS bronze.operations;
+CREATE SCHEMA IF NOT EXISTS bronze.iot;
+CREATE SCHEMA IF NOT EXISTS silver.sales;
+CREATE SCHEMA IF NOT EXISTS silver.customers;
+CREATE SCHEMA IF NOT EXISTS silver.operations;
+CREATE SCHEMA IF NOT EXISTS silver.iot;
+CREATE SCHEMA IF NOT EXISTS gold.sales;
+CREATE SCHEMA IF NOT EXISTS gold.customers;
+CREATE SCHEMA IF NOT EXISTS gold.operations;
+CREATE SCHEMA IF NOT EXISTS gold.iot;
 ```
 
-### 5. Configure dbt
+### 5. Phase 2 — Clusters & Workflows
+
+Add to `terraform.tfvars`:
+```hcl
+deploy_workspace_resources = true
+```
+
+Then:
+```bash
+terraform apply
+```
+
+Creates: all-purpose cluster, job cluster, medallion pipeline workflow (daily 6 AM UTC), SQL warehouse.
+
+### 6. Verify Deployment
+
+```bash
+terraform output
+
+# Example:
+# databricks_workspace_url = "https://adb-123456789.0.azuredatabricks.net"
+# databricks_workspace_id  = "123456789"
+# storage_account_name     = "stdevdatabricksdl"
+# key_vault_uri            = "https://kv-dev-dbx-abc123.vault.azure.net/"
+```
+
+### 7. Configure dbt (optional — for local development)
 
 ```bash
 cd ../dbt
 cp profiles.yml.example profiles.yml
 
-# Get the workspace URL from Terraform
 export DATABRICKS_HOST=$(terraform -chdir=../terraform output -raw databricks_workspace_url)
 
-# Create a Personal Access Token in Databricks
+# Create a Personal Access Token in Databricks:
 # Workspace → User Settings → Developer → Access Tokens → Generate
 export DATABRICKS_TOKEN="dapi..."
-export DATABRICKS_HTTP_PATH="/sql/1.0/warehouses/$(terraform -chdir=../terraform output -raw sql_warehouse_id)"
-```
 
-### 6. Run dbt
-
-```bash
-# Install dbt packages
 dbt deps
-
-# Validate models compile
-dbt compile
-
-# Run all models (dev target)
-dbt run --target dev
-
-# Run tests
-dbt test --target dev
+dbt compile --target dev
 ```
 
-### 7. Trigger the Pipeline
+## Known Issues & Workarounds
 
-The Medallion pipeline is scheduled daily at 6 AM UTC. To run it immediately:
+See [`DEPLOY.md`](../DEPLOY.md) for the full list. Quick reference:
 
-```bash
-# Via Databricks CLI
-databricks jobs run-now --job-id $(databricks jobs list --name "dbx-pipeline-dev-medallion" --output json | jq -r '.[0].job_id')
-```
-
-Or via the Databricks UI: **Workflows → Jobs → dbx-pipeline-dev-medallion → Run Now**
-
-### 8. Verify Data
-
-Open your Databricks workspace and run:
-
-```sql
--- Check bronze tables
-SELECT COUNT(*) FROM bronze.sales.raw_sales_transactions;
-
--- Check silver tables
-SELECT COUNT(*) FROM silver.sales.sales_transactions_cleaned;
-
--- Check gold tables
-SELECT * FROM gold.sales.daily_sales_summary ORDER BY transaction_date DESC LIMIT 10;
-
--- Customer 360 segments
-SELECT customer_segment, COUNT(*) as cnt
-FROM gold.customers.customer_360
-GROUP BY customer_segment
-ORDER BY cnt DESC;
-```
-
-## Environment Promotion
-
-### Dev → Staging → Prod
-
-```bash
-# Dev environment
-cd terraform/environments/dev
-terraform init && terraform apply
-
-# Staging (non-prod but realistic)
-cd ../staging
-terraform init && terraform apply
-
-# Production (with GRS storage, bigger clusters)
-cd ../prod
-terraform init && terraform apply
-```
-
-### Key Differences Between Environments
-
-| Setting | Dev | Staging | Prod |
-|---------|-----|---------|------|
-| Storage Replication | LRS | GRS | GRS |
-| Cluster Workers | 1-5 | 2-10 | 5-20 |
-| SQL Warehouse | X-Small | Small | 2X-Small |
-| Auto-stop | 10 min | 20 min | 30 min |
-| Key Vault SKU | Standard | Standard | Premium |
-| Spot Instances | Yes | Optional | No |
+| Symptom | Fix |
+|---------|-----|
+| Azure Quota Exceeded | Change region to `eastus`/`westeurope`, or `autoscale_max_workers = 1` |
+| Metastore limit reached | Workspace auto-assigns — no action needed |
+| Storage credential "account admin required" | Use Databricks UI (step 4 above) |
+| Key Vault access denied | Module now creates access policy for deployer |
+| NSG NetworkIntentPolicy conflict | NSG is created empty — Databricks manages rules |
+| Workspace "unauthorized network access" | Dev has public endpoint (`no_public_ip` only for prod) |
 
 ## Troubleshooting
 
-### "403 Forbidden" on Storage
+### Destroy is stuck / RG won't delete
 
-The service principal needs `Storage Blob Data Contributor` on the ADLS account. Wait for the RBAC propagation (~5 minutes) or run:
+If `terraform destroy` fails with "Resource Group still contains Resources", delete the RG manually from the Azure Portal, then:
 
 ```bash
-terraform apply -target=azurerm_role_assignment.databricks_storage
+rm terraform.tfstate terraform.tfstate.backup
+rm -rf .terraform
+terraform init
 ```
-
-### "Cannot create metastore"
-
-Ensure your Databricks account has Unity Catalog enabled and the workspace is Premium tier.
 
 ### dbt "Catalog not found"
 
-```sql
--- Manually create catalogs if Terraform didn't
-CREATE CATALOG IF NOT EXISTS bronze;
-CREATE CATALOG IF NOT EXISTS silver;
-CREATE CATALOG IF NOT EXISTS gold;
-```
+Catalogs must be created via UI (step 4). Terraform cannot create them without account admin.
 
 ### Pipeline timeouts
 
-Increase `timeout_seconds` in the workflow YAML or reduce `autoscale_max_workers`.
+Increase `timeout_seconds` in `pipelines/workflows/medallion_pipeline.yml` or reduce `autoscale_max_workers`.
 
 ## Next Steps
 
 1. **Load sample data** → Copy test CSVs to `abfss://landing@<storage-account>.dfs.core.windows.net/`
-2. **Customize dbt models** → Edit `dbt/models/gold/` to add your business logic
-3. **Set up BI** → Connect Power BI or Tableau to the SQL Warehouse
-4. **Add CI/CD** → Configure GitHub Actions secrets for production deployments
-5. **Enable monitoring** → Set up Azure Monitor alerts on the resource group
+2. **Customize dbt models** → Edit `dbt/models/gold/` for your business logic
+3. **Set up BI** → Connect Power BI/Tableau to the SQL Warehouse
+4. **Add CI/CD** → Configure GitHub Actions secrets (`DATABRICKS_HOST`, `DATABRICKS_TOKEN`)
+5. **Enable monitoring** → Azure Monitor alerts on the resource group

@@ -133,28 +133,26 @@ environment           = "dev"
 location              = "westeurope"
 ```
 
-### 3. Deploy Infrastructure
+### 3. Deploy Infrastructure (Two Phases)
 
 ```bash
-# Authenticate
-az login
-
-# Initialize and deploy
+# Phase 1 — Core infra + workspace
 terraform init
-terraform plan -out=tfplan
-terraform apply tfplan
+terraform apply
+
+# Phase 2 — Clusters + jobs + SQL warehouse
+# Add to terraform.tfvars: deploy_workspace_resources = true
+terraform apply
 ```
 
-**What this creates (~15 min):**
+> ⚠️ **See [`DEPLOY.md`](DEPLOY.md) for known issues**: Azure quota, Unity Catalog setup, NSG conflicts, and troubleshooting.
 
+**What Phase 1 creates (~12 min):**
 - Resource Group
-- VNet + Subnets + NSG
-- ADLS Gen2 with Bronze/Silver/Gold containers
-- Key Vault
-- Databricks Workspace (Premium)
-- Unity Catalog Metastore + Catalog hierarchy
-- Service Principal + RBAC
-- SQL Warehouse
+- VNet + Subnets + NSG (empty — Databricks manages rules via NIPs)
+- ADLS Gen2 with 7 containers (bronze, silver, gold, landing, checkpoint, metastore)
+- Key Vault with access policy
+- Databricks Workspace (Premium, VNet-injected)
 - Medallion Workflow (scheduled)
 
 ### 4. Configure dbt
