@@ -104,7 +104,7 @@ resource "azurerm_storage_account" "datalake" {
   tags                     = var.tags
 
   blob_properties {
-    versioning_enabled       = true
+    versioning_enabled       = false
     change_feed_enabled      = true
     last_access_time_enabled = true
   }
