@@ -55,7 +55,13 @@ provider "databricks" {
 
 provider "databricks" {
   alias = "workspace"
-  host  = module.databricks.workspace_url
+
+  # Resolved at apply time (workspace must exist first)
+  host                        = module.databricks.workspace_url
+  azure_workspace_resource_id = module.databricks.workspace_id
+  azure_tenant_id             = module.azure.tenant_id
+
+  # Auth: inherits ARM_CLIENT_ID / ARM_CLIENT_SECRET from azurerm provider (SP auth)
 }
 
 # ─── Azure AD ───
