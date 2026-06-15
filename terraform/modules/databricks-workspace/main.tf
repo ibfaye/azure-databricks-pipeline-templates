@@ -50,18 +50,15 @@ provider "databricks" {
 }
 
 # ─── Unity Catalog Metastore ───
-resource "databricks_metastore" "main" {
-  provider      = databricks.workspace
-  name          = "metastore-${var.environment}"
-  storage_root  = "abfss://${var.environment}-metastore@${var.storage_account_name}.dfs.core.windows.net/"
-  owner         = var.databricks_account_id
-  region        = var.location
-  force_destroy = true
+# Look up existing metastore (accounts have 1 per region)
+data "databricks_metastore" "main" {
+  provider = databricks.workspace
+  region   = var.location
 }
 
 resource "databricks_metastore_assignment" "main" {
   provider     = databricks.workspace
-  metastore_id = databricks_metastore.main.id
+  metastore_id = data.databricks_metastore.main.metastore_id
   workspace_id = azurerm_databricks_workspace.main.workspace_id
 }
 
@@ -162,37 +159,25 @@ resource "databricks_schema" "gold" {
 }
 
 # ─── External Locations ───
-resource "databricks_storage_credential" "main" {
-  provider = databricks.workspace
-  name     = "storage-cred-${var.environment}"
-  azure_service_principal {
-    directory_id   = var.tenant_id
-    application_id = azuread_application.databricks_sp.client_id
-    client_secret  = azuread_service_principal_password.databricks_sp.value
-  }
-}
+# Disabled — catalogs use storage_root directly. Uncomment if direct ADLS access is needed.
+#
+# resource "databricks_storage_credential" "main" {
+#   provider = databricks.workspace
+#   name     = "storage-cred-${var.environment}"
+#   azure_managed_identity {
+#     access_connector_id = azurerm_databricks_workspace.main.storage_account_identity[0].managed_identity_id
+#   }
+# }
+#
+# resource "databricks_external_location" "datalake" {
+#   provider        = databricks.workspace
+#   name            = "datalake-${var.environment}"
+#   url             = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
+#   credential_name = databricks_storage_credential.main.name
+#   comment         = "External location for ADLS Gen2 data lake"
+# }
 
-resource "databricks_external_location" "datalake" {
-  provider        = databricks.workspace
-  name            = "datalake-${var.environment}"
-  url             = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
-  credential_name = databricks_storage_credential.main.name
-  comment         = "External location for ADLS Gen2 data lake"
-}
-
-resource "databricks_external_location" "silver_loc" {
-  provider        = databricks.workspace
-  name            = "silver-${var.environment}"
-  url             = "abfss://silver@${var.storage_account_name}.dfs.core.windows.net/"
-  credential_name = databricks_storage_credential.main.name
-}
-
-resource "databricks_external_location" "gold_loc" {
-  provider        = databricks.workspace
-  name            = "gold-${var.environment}"
-  url             = "abfss://gold@${var.storage_account_name}.dfs.core.windows.net/"
-  credential_name = databricks_storage_credential.main.name
-}
+# ─── Grants (admin group) ───
 
 # ─── Grants (admin group) ───
 resource "databricks_grants" "metastore" {
