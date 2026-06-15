@@ -60,72 +60,13 @@ resource "azurerm_subnet" "private" {
 }
 
 # ─── Network Security Group ───
+# No security rules defined — Databricks Network Intent Policies auto-provision them.
+# Defining rules here causes conflicts with auto-generated NIP rules.
 resource "azurerm_network_security_group" "main" {
   name                = "nsg-${var.environment}-databricks"
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   tags                = var.tags
-
-  security_rule {
-    name                       = "AllowDatabricksControlPlane"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "AzureDatabricks"
-    destination_address_prefix = "*"
-  }
-
-  security_rule {
-    name                       = "AllowDatabricksWebApp"
-    priority                   = 110
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "AzureDatabricks"
-    destination_address_prefix = "*"
-  }
-
-  # Databricks Network Intent Policy required outbound rules
-  security_rule {
-    name                       = "DatabricksWorkerToStorage"
-    priority                   = 200
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "443"
-    source_address_prefix      = "VirtualNetwork"
-    destination_address_prefix = "Storage"
-  }
-
-  security_rule {
-    name                       = "DatabricksWorkerToSql"
-    priority                   = 210
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "3306"
-    source_address_prefix      = "VirtualNetwork"
-    destination_address_prefix = "Sql"
-  }
-
-  security_rule {
-    name                       = "DatabricksWorkerToEventHub"
-    priority                   = 220
-    direction                  = "Outbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "9093"
-    source_address_prefix      = "VirtualNetwork"
-    destination_address_prefix = "EventHub"
-  }
 }
 
 # Associate NSG with public subnet (required for VNet-injected Databricks)
