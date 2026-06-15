@@ -50,17 +50,20 @@ provider "databricks" {
 }
 
 # ─── Unity Catalog Metastore ───
-# Look up existing metastore (accounts have 1 per region)
-data "databricks_metastore" "main" {
-  provider = databricks.workspace
-  region   = var.location
-}
-
-resource "databricks_metastore_assignment" "main" {
-  provider     = databricks.workspace
-  metastore_id = data.databricks_metastore.main.metastore_id
-  workspace_id = azurerm_databricks_workspace.main.workspace_id
-}
+# Workspace auto-assigns to the region's existing metastore.
+# No explicit metastore creation or assignment needed if one already exists.
+# To force a specific metastore, uncomment:
+#
+# data "databricks_metastore" "main" {
+#   provider     = databricks.workspace
+#   metastore_id = "your-metastore-id"
+# }
+#
+# resource "databricks_metastore_assignment" "main" {
+#   provider     = databricks.workspace
+#   metastore_id = data.databricks_metastore.main.metastore_id
+#   workspace_id = azurerm_databricks_workspace.main.workspace_id
+# }
 
 # ─── Service Principal for Unity Catalog ───
 resource "azuread_application" "databricks_sp" {
@@ -180,14 +183,17 @@ resource "databricks_schema" "gold" {
 # ─── Grants (admin group) ───
 
 # ─── Grants (admin group) ───
-resource "databricks_grants" "metastore" {
-  provider  = databricks.workspace
-  metastore = databricks_metastore.main.id
-  grant {
-    principal  = var.admin_group_name
-    privileges = ["CREATE_CATALOG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_STORAGE_CREDENTIAL"]
-  }
-}
+# Grants on metastore require metastore_id — use Databricks UI or uncomment
+# the metastore data source above to get the ID.
+#
+# resource "databricks_grants" "metastore" {
+#   provider  = databricks.workspace
+#   metastore = data.databricks_metastore.main.metastore_id
+#   grant {
+#     principal  = var.admin_group_name
+#     privileges = ["CREATE_CATALOG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_STORAGE_CREDENTIAL"]
+#   }
+# }
 
 resource "databricks_grants" "bronze_catalog" {
   provider = databricks.workspace
