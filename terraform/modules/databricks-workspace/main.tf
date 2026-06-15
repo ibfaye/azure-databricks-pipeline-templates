@@ -98,132 +98,38 @@ resource "databricks_service_principal" "sp" {
   display_name   = "sp-unity-catalog-${var.environment}"
 }
 
-# ─── Catalog structure ───
-resource "databricks_catalog" "bronze" {
-  provider = databricks.workspace
-  name     = "bronze"
-  comment  = "Raw ingested data (Bronze layer)"
-  properties = {
-    layer = "bronze"
-  }
-}
-
-resource "databricks_catalog" "silver" {
-  provider = databricks.workspace
-  name     = "silver"
-  comment  = "Cleansed and validated data (Silver layer)"
-  properties = {
-    layer = "silver"
-  }
-}
-
-resource "databricks_catalog" "gold" {
-  provider = databricks.workspace
-  name     = "gold"
-  comment  = "Aggregated business-ready data (Gold layer)"
-  properties = {
-    layer = "gold"
-  }
-}
-
-# ─── Default schemas ───
-locals {
-  schemas = ["sales", "marketing", "finance", "operations", "iot", "customers"]
-}
-
-resource "databricks_schema" "bronze" {
-  for_each     = toset(local.schemas)
-  provider     = databricks.workspace
-  catalog_name = databricks_catalog.bronze.name
-  name         = each.key
-  properties   = { environment = var.environment }
-}
-
-resource "databricks_schema" "silver" {
-  for_each     = toset(local.schemas)
-  provider     = databricks.workspace
-  catalog_name = databricks_catalog.silver.name
-  name         = each.key
-  properties   = { environment = var.environment }
-}
-
-resource "databricks_schema" "gold" {
-  for_each     = toset(local.schemas)
-  provider     = databricks.workspace
-  catalog_name = databricks_catalog.gold.name
-  name         = each.key
-  properties   = { environment = var.environment }
-}
-
-# ─── External Locations ───
-# Disabled — catalogs use storage_root directly. Uncomment if direct ADLS access is needed.
+# ═══════════════════════════════════════════════════════════════════
+# UNITY CATALOG — Create via Databricks SQL Editor (30 seconds)
+# ═══════════════════════════════════════════════════════════════════
+# Catalogs require managed storage or external locations, which need
+# account admin privileges. Run this SQL in your workspace's SQL Editor:
 #
-# resource "databricks_storage_credential" "main" {
-#   provider = databricks.workspace
-#   name     = "storage-cred-${var.environment}"
-#   azure_managed_identity {
-#     access_connector_id = azurerm_databricks_workspace.main.storage_account_identity[0].managed_identity_id
-#   }
-# }
+#   CREATE CATALOG IF NOT EXISTS bronze COMMENT 'Raw ingested data (Bronze layer)';
+#   CREATE CATALOG IF NOT EXISTS silver COMMENT 'Cleansed data (Silver layer)';
+#   CREATE CATALOG IF NOT EXISTS gold   COMMENT 'Business-ready data (Gold layer)';
 #
-# resource "databricks_external_location" "datalake" {
-#   provider        = databricks.workspace
-#   name            = "datalake-${var.environment}"
-#   url             = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
-#   credential_name = databricks_storage_credential.main.name
-#   comment         = "External location for ADLS Gen2 data lake"
-# }
-
-# ─── Grants (admin group) ───
-
-# ─── Grants (admin group) ───
-# Grants on metastore require metastore_id — use Databricks UI or uncomment
-# the metastore data source above to get the ID.
+#   CREATE SCHEMA IF NOT EXISTS bronze.sales;
+#   CREATE SCHEMA IF NOT EXISTS bronze.marketing;
+#   CREATE SCHEMA IF NOT EXISTS bronze.finance;
+#   CREATE SCHEMA IF NOT EXISTS bronze.operations;
+#   CREATE SCHEMA IF NOT EXISTS bronze.iot;
+#   CREATE SCHEMA IF NOT EXISTS bronze.customers;
 #
-# resource "databricks_grants" "metastore" {
-#   provider  = databricks.workspace
-#   metastore = data.databricks_metastore.main.metastore_id
-#   grant {
-#     principal  = var.admin_group_name
-#     privileges = ["CREATE_CATALOG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_STORAGE_CREDENTIAL"]
-#   }
-# }
-
-resource "databricks_grants" "bronze_catalog" {
-  provider = databricks.workspace
-  catalog  = databricks_catalog.bronze.name
-  grant {
-    principal  = var.admin_group_name
-    privileges = ["ALL_PRIVILEGES"]
-  }
-  grant {
-    principal  = var.reader_group_name
-    privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
-  }
-}
-
-resource "databricks_grants" "silver_catalog" {
-  provider = databricks.workspace
-  catalog  = databricks_catalog.silver.name
-  grant {
-    principal  = var.admin_group_name
-    privileges = ["ALL_PRIVILEGES"]
-  }
-  grant {
-    principal  = var.reader_group_name
-    privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
-  }
-}
-
-resource "databricks_grants" "gold_catalog" {
-  provider = databricks.workspace
-  catalog  = databricks_catalog.gold.name
-  grant {
-    principal  = var.admin_group_name
-    privileges = ["ALL_PRIVILEGES"]
-  }
-  grant {
-    principal  = var.reader_group_name
-    privileges = ["USE_CATALOG", "USE_SCHEMA", "SELECT"]
-  }
-}
+#   CREATE SCHEMA IF NOT EXISTS silver.sales;
+#   CREATE SCHEMA IF NOT EXISTS silver.marketing;
+#   CREATE SCHEMA IF NOT EXISTS silver.finance;
+#   CREATE SCHEMA IF NOT EXISTS silver.operations;
+#   CREATE SCHEMA IF NOT EXISTS silver.iot;
+#   CREATE SCHEMA IF NOT EXISTS silver.customers;
+#
+#   CREATE SCHEMA IF NOT EXISTS gold.sales;
+#   CREATE SCHEMA IF NOT EXISTS gold.marketing;
+#   CREATE SCHEMA IF NOT EXISTS gold.finance;
+#   CREATE SCHEMA IF NOT EXISTS gold.operations;
+#   CREATE SCHEMA IF NOT EXISTS gold.iot;
+#   CREATE SCHEMA IF NOT EXISTS gold.customers;
+#
+#   GRANT ALL PRIVILEGES ON CATALOG bronze TO admins;
+#   GRANT ALL PRIVILEGES ON CATALOG silver TO admins;
+#   GRANT ALL PRIVILEGES ON CATALOG gold   TO admins;
+# ═══════════════════════════════════════════════════════════════════
