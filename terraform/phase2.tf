@@ -146,8 +146,8 @@ resource "databricks_job" "medallion_pipeline" {
 
 # ─── SQL Warehouse for BI ───
 resource "databricks_sql_endpoint" "main" {
-  provider = databricks.workspace
-  count    = var.deploy_workspace_resources ? 1 : 0
+  provider         = databricks.workspace
+  count            = var.deploy_workspace_resources ? 1 : 0
   name             = "sql-warehouse-${var.environment}"
   cluster_size     = var.environment == "prod" ? "2X-Small" : "X-Small"
   min_num_clusters = 1

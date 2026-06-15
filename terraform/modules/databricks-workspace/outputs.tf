@@ -15,7 +15,7 @@ output "workspace_url" {
 
 output "metastore_id" {
   description = "Unity Catalog metastore ID (auto-assigned by region)"
-  value       = null  # Auto-assigned — use Databricks UI to find the ID
+  value       = null # Auto-assigned — use Databricks UI to find the ID
 }
 
 output "service_principal_client_id" {

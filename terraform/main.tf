@@ -12,21 +12,21 @@ module "azure" {
 module "databricks" {
   source = "./modules/databricks-workspace"
 
-  resource_group_name   = module.azure.resource_group_name
-  location              = module.azure.location
-  environment           = var.environment
-  workspace_name        = "dbw-${var.project_name}-${var.environment}"
-  sku                   = var.databricks_workspace_sku
-  public_subnet_id      = module.azure.public_subnet_id
-  private_subnet_id     = module.azure.private_subnet_id
-  no_public_ip          = var.environment == "prod"  # Dev: allow public access for provisioning
-  storage_account_name  = module.azure.storage_account_name
-  storage_account_id    = module.azure.storage_account_id
-  tenant_id             = module.azure.tenant_id
-  databricks_account_id = var.databricks_account_id
-  admin_group_name             = var.admin_group_name
-  reader_group_name            = var.reader_group_name
-  public_nsg_association_id    = module.azure.public_nsg_association_id
-  private_nsg_association_id   = module.azure.private_nsg_association_id
-  tags                         = var.tags
+  resource_group_name        = module.azure.resource_group_name
+  location                   = module.azure.location
+  environment                = var.environment
+  workspace_name             = "dbw-${var.project_name}-${var.environment}"
+  sku                        = var.databricks_workspace_sku
+  public_subnet_id           = module.azure.public_subnet_id
+  private_subnet_id          = module.azure.private_subnet_id
+  no_public_ip               = var.environment == "prod" # Dev: allow public access for provisioning
+  storage_account_name       = module.azure.storage_account_name
+  storage_account_id         = module.azure.storage_account_id
+  tenant_id                  = module.azure.tenant_id
+  databricks_account_id      = var.databricks_account_id
+  admin_group_name           = var.admin_group_name
+  reader_group_name          = var.reader_group_name
+  public_nsg_association_id  = module.azure.public_nsg_association_id
+  private_nsg_association_id = module.azure.private_nsg_association_id
+  tags                       = var.tags
 }
