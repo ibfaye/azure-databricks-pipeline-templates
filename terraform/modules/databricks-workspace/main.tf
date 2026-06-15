@@ -43,11 +43,7 @@ resource "azurerm_databricks_workspace" "main" {
   }
 }
 
-# Databricks provider configuration (requires workspace to exist first)
-provider "databricks" {
-  alias = "workspace"
-  host  = "https://${azurerm_databricks_workspace.main.workspace_url}"
-}
+# Databricks provider configured in root providers.tf — not duplicated here.
 
 # ─── Unity Catalog Metastore ───
 # Workspace auto-assigns to the region's existing metastore.

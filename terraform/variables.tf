@@ -56,16 +56,16 @@ variable "autoscale_min_workers" {
   default     = 2
 }
 
-variable "autoscale_max_workers" {
-  description = "Maximum workers for Databricks autoscaling"
-  type        = number
-  default     = 10
-}
-
 variable "deploy_workspace_resources" {
   description = "Set to true after Phase 1 (workspace created) to deploy clusters, jobs, SQL warehouse"
   type        = bool
   default     = false
+}
+
+variable "autoscale_max_workers" {
+  description = "Maximum workers for Databricks autoscaling"
+  type        = number
+  default     = 10
 }
 
 variable "admin_group_name" {

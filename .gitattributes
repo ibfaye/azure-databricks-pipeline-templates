@@ -1,0 +1,23 @@
+# Force LF line endings on all text files
+* text=auto eol=lf
+
+# Terraform
+*.tf text eol=lf
+*.tfvars text eol=lf
+*.hcl text eol=lf
+
+# Python
+*.py text eol=lf
+
+# dbt / SQL
+*.sql text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.csv text eol=lf
+
+# Docs
+*.md text eol=lf
+
+# Binary
+*.png binary
+*.jpg binary
