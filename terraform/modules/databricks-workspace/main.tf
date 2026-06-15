@@ -100,30 +100,27 @@ resource "databricks_service_principal" "sp" {
 
 # ─── Catalog structure ───
 resource "databricks_catalog" "bronze" {
-  provider     = databricks.workspace
-  name         = "bronze"
-  comment      = "Raw ingested data (Bronze layer)"
-  storage_root = "abfss://bronze@${var.storage_account_name}.dfs.core.windows.net/"
+  provider = databricks.workspace
+  name     = "bronze"
+  comment  = "Raw ingested data (Bronze layer)"
   properties = {
     layer = "bronze"
   }
 }
 
 resource "databricks_catalog" "silver" {
-  provider     = databricks.workspace
-  name         = "silver"
-  comment      = "Cleansed and validated data (Silver layer)"
-  storage_root = "abfss://silver@${var.storage_account_name}.dfs.core.windows.net/"
+  provider = databricks.workspace
+  name     = "silver"
+  comment  = "Cleansed and validated data (Silver layer)"
   properties = {
     layer = "silver"
   }
 }
 
 resource "databricks_catalog" "gold" {
-  provider     = databricks.workspace
-  name         = "gold"
-  comment      = "Aggregated business-ready data (Gold layer)"
-  storage_root = "abfss://gold@${var.storage_account_name}.dfs.core.windows.net/"
+  provider = databricks.workspace
+  name     = "gold"
+  comment  = "Aggregated business-ready data (Gold layer)"
   properties = {
     layer = "gold"
   }
