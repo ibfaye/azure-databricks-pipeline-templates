@@ -89,6 +89,43 @@ resource "azurerm_network_security_group" "main" {
     source_address_prefix      = "AzureDatabricks"
     destination_address_prefix = "*"
   }
+
+  # Databricks Network Intent Policy required outbound rules
+  security_rule {
+    name                       = "DatabricksWorkerToStorage"
+    priority                   = 200
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "Storage"
+  }
+
+  security_rule {
+    name                       = "DatabricksWorkerToSql"
+    priority                   = 210
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "3306"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "Sql"
+  }
+
+  security_rule {
+    name                       = "DatabricksWorkerToEventHub"
+    priority                   = 220
+    direction                  = "Outbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "9093"
+    source_address_prefix      = "VirtualNetwork"
+    destination_address_prefix = "EventHub"
+  }
 }
 
 # Associate NSG with public subnet (required for VNet-injected Databricks)
