@@ -52,3 +52,8 @@ output "tenant_id" {
   description = "Azure tenant ID"
   value       = data.azurerm_client_config.current.tenant_id
 }
+
+output "public_nsg_association_id" {
+  description = "NSG association ID for public subnet"
+  value       = azurerm_subnet_network_security_group_association.public.id
+}

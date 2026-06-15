@@ -23,7 +23,8 @@ module "databricks" {
   storage_account_id    = module.azure.storage_account_id
   tenant_id             = module.azure.tenant_id
   databricks_account_id = var.databricks_account_id
-  admin_group_name      = var.admin_group_name
-  reader_group_name     = var.reader_group_name
-  tags                  = var.tags
+  admin_group_name             = var.admin_group_name
+  reader_group_name            = var.reader_group_name
+  public_nsg_association_id    = module.azure.public_nsg_association_id
+  tags                         = var.tags
 }

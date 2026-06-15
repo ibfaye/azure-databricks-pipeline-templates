@@ -91,6 +91,12 @@ resource "azurerm_network_security_group" "main" {
   }
 }
 
+# Associate NSG with public subnet (required for VNet-injected Databricks)
+resource "azurerm_subnet_network_security_group_association" "public" {
+  subnet_id                 = azurerm_subnet.public.id
+  network_security_group_id = azurerm_network_security_group.main.id
+}
+
 # ─── Azure ADLS Gen2 Storage Account ───
 resource "azurerm_storage_account" "datalake" {
   name                     = "st${var.environment}databricksdl"
@@ -165,9 +171,21 @@ resource "random_string" "suffix" {
 
 data "azurerm_client_config" "current" {}
 
+# Grant current user access to write secrets
+resource "azurerm_key_vault_access_policy" "current_user" {
+  key_vault_id = azurerm_key_vault.main.id
+  tenant_id    = data.azurerm_client_config.current.tenant_id
+  object_id    = data.azurerm_client_config.current.object_id
+
+  secret_permissions = [
+    "Get", "List", "Set", "Delete", "Recover", "Backup", "Restore"
+  ]
+}
+
 # Store ADLS access key in Key Vault
 resource "azurerm_key_vault_secret" "adls_key" {
   name         = "adls-access-key"
   value        = azurerm_storage_account.datalake.primary_access_key
   key_vault_id = azurerm_key_vault.main.id
+  depends_on   = [azurerm_key_vault_access_policy.current_user]
 }

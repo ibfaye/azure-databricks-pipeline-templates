@@ -83,3 +83,8 @@ variable "reader_group_name" {
   type        = string
   default     = "analysts"
 }
+
+variable "public_nsg_association_id" {
+  description = "NSG association ID for public subnet (required for VNet injection)"
+  type        = string
+}
