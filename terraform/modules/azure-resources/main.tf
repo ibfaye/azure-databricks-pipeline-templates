@@ -97,6 +97,11 @@ resource "azurerm_subnet_network_security_group_association" "public" {
   network_security_group_id = azurerm_network_security_group.main.id
 }
 
+resource "azurerm_subnet_network_security_group_association" "private" {
+  subnet_id                 = azurerm_subnet.private.id
+  network_security_group_id = azurerm_network_security_group.main.id
+}
+
 # ─── Azure ADLS Gen2 Storage Account ───
 resource "azurerm_storage_account" "datalake" {
   name                     = "st${var.environment}databricksdl"

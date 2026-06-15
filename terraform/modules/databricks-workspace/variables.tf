@@ -88,3 +88,8 @@ variable "public_nsg_association_id" {
   description = "NSG association ID for public subnet (required for VNet injection)"
   type        = string
 }
+
+variable "private_nsg_association_id" {
+  description = "NSG association ID for private subnet (required for VNet injection)"
+  type        = string
+}

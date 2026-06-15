@@ -37,6 +37,7 @@ resource "azurerm_databricks_workspace" "main" {
     public_subnet_name       = var.public_subnet_id != null ? split("/", var.public_subnet_id)[length(split("/", var.public_subnet_id)) - 1] : null
     private_subnet_name      = var.private_subnet_id != null ? split("/", var.private_subnet_id)[length(split("/", var.private_subnet_id)) - 1] : null
     public_subnet_network_security_group_association_id = var.public_nsg_association_id
+    private_subnet_network_security_group_association_id = var.private_nsg_association_id
     storage_account_sku_name = "Standard_GRS"
     nat_gateway_name         = ""
   }

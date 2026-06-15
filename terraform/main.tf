@@ -26,5 +26,6 @@ module "databricks" {
   admin_group_name             = var.admin_group_name
   reader_group_name            = var.reader_group_name
   public_nsg_association_id    = module.azure.public_nsg_association_id
+  private_nsg_association_id   = module.azure.private_nsg_association_id
   tags                         = var.tags
 }

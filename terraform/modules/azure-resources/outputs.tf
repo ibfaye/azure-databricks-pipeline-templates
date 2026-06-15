@@ -57,3 +57,8 @@ output "public_nsg_association_id" {
   description = "NSG association ID for public subnet"
   value       = azurerm_subnet_network_security_group_association.public.id
 }
+
+output "private_nsg_association_id" {
+  description = "NSG association ID for private subnet"
+  value       = azurerm_subnet_network_security_group_association.private.id
+}
