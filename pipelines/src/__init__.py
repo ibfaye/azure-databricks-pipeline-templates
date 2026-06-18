@@ -11,7 +11,7 @@ Usage:
 """
 
 __version__ = "1.0.0"
-__author__ = "Sen'Analytics"
+__author__ = "XamXam Graph"
 
 from .config import PipelineConfig
 from .readers import DataLakeReader, EventHubReader

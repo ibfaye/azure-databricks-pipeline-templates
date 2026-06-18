@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing! This project is maintained by [Sen'Analytics](https://senanalytics.com) and welcomes contributions from the community.
+Thanks for your interest in contributing! This project is maintained by [XamXam Graph](https://xamxamgraph.com) and welcomes contributions from the community.
 
 ## Development Setup
 

@@ -14,7 +14,7 @@
 
 ## Overview
 
-End-to-end Azure Databricks pipeline templates built for **Sen'Analytics** data engineering clients. Deploy a full medallion architecture (Bronze → Silver → Gold) with Unity Catalog governance, dbt transformations, and infrastructure-as-code in under 30 minutes.
+End-to-end Azure Databricks pipeline templates built for **XamXam Graph** data engineering clients. Deploy a full medallion architecture (Bronze → Silver → Gold) with Unity Catalog governance, dbt transformations, and infrastructure-as-code in under 30 minutes.
 
 **Why this exists:** Most Databricks projects start from scratch — stitching together VNets, Unity Catalog, dbt, and CI/CD. This repo is the template that eliminates that boilerplate. Every module is production-tested, documented, and ready for customer demos.
 
@@ -309,7 +309,7 @@ git push origin feature/new-data-source
 
 ## 👤 About
 
-Built by [Sen'Analytics](https://senanalytics.com) — a data engineering agency based in Dakar, Senegal, serving Francophone West Africa. We specialize in Azure Databricks, dbt, and modern data stack implementations for enterprises across retail, finance, IoT, and marketing.
+Built by [XamXam Graph](https://xamxamgraph.com) — a data engineering agency based in Dakar, Senegal, serving Francophone West Africa. We specialize in Azure Databricks, dbt, and modern data stack implementations for enterprises across retail, finance, IoT, and marketing.
 
 **Contact:** iboufaye2000@hotmail.com  
 **GitHub:** [github.com/ibfaye](https://github.com/ibfaye)
